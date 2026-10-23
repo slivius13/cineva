@@ -1,4 +1,11 @@
 /* === CINEVA TIER LIST SYSTEM (MOVIES & ACTORS) === */
+(() => {
+  const byId = id => document.getElementById(id);
+  const safe = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const showToast = (msg, type) => (typeof window.showToast === 'function' ? window.showToast(msg, type) : null);
+  const openTitle = (id, type) => (typeof window.openTitle === 'function' ? window.openTitle(id, type) : null);
+  const openPerson = (id) => (typeof window.openPerson === 'function' ? window.openPerson(id) : null);
+  const getWatchlist = () => (typeof window.getWatchlist === 'function' ? window.getWatchlist() : []);
 
   // TIER LIST SYSTEM (MOVIES & ACTORS)
   // ==========================================
@@ -951,7 +958,6 @@
 // ==========================================
 // TIER LIST PROJECT SHARING (VIA URL HASH)
 // ==========================================
-
 function encodeTierProject(obj) {
   const json = JSON.stringify(obj);
   return encodeURIComponent(btoa(unescape(encodeURIComponent(json))));
@@ -998,24 +1004,20 @@ function shareTierListProject() {
     };
 
     const encoded = encodeTierProject(payload);
-    // Build direct URL to tierlist.html (or index.html) with hash
     const basePath = window.location.pathname.endsWith('.html') 
       ? window.location.pathname 
-      : (window.location.pathname.replace(/\/?$/, '/index.html'));
+      : (window.location.pathname.replace(/\/?$/, '/tierlist.html'));
     const shareUrl = `${window.location.origin}${basePath}#tier=${encoded}`;
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast('🔗 Ссылка на тирлист скопирована в буфер обмена!', 'success');
-      }).catch(() => {
-        prompt('Скопируйте ссылку на ваш тирлист:', shareUrl);
-      });
+        if (typeof window.showToast === 'function') window.showToast('🔗 Ссылка на тирлист скопирована в буфер обмена!', 'success');
+      }).catch(() => prompt('Скопируйте ссылку на тирлист:', shareUrl));
     } else {
-      prompt('Скопируйте ссылку на ваш тирлист:', shareUrl);
+      prompt('Скопируйте ссылку на тирлист:', shareUrl);
     }
   } catch (err) {
     console.error('Failed to share tierlist:', err);
-    showToast('Ошибка при формировании ссылки', 'error');
   }
 }
 
@@ -1027,8 +1029,7 @@ function checkSharedTierFromUrl() {
     if (hash.includes('tier=')) {
       tierParam = hash.split('tier=')[1].split('&')[0];
     } else if (search.includes('tier=')) {
-      const p = new URLSearchParams(search);
-      tierParam = p.get('tier');
+      tierParam = new URLSearchParams(search).get('tier');
     }
     if (tierParam) {
       const payload = decodeTierProject(tierParam);
@@ -1049,10 +1050,8 @@ function checkSharedTierFromUrl() {
         saveTierListStorage();
         updateTierModeUI();
         renderTierBoard();
-        if (typeof showPage === 'function') {
-          showPage('tierlist');
-        }
-        showToast(`⭐ Проект «${payload.t || 'Тирлист'}» успешно загружен по ссылке!`, 'success');
+        if (typeof window.showPage === 'function') window.showPage('tierlist');
+        if (typeof window.showToast === 'function') window.showToast(`⭐ Проект «${payload.t || 'Тирлист'}» успешно загружен по ссылке!`, 'success');
       }
     }
   } catch (e) {
@@ -1060,14 +1059,16 @@ function checkSharedTierFromUrl() {
   }
 }
 
-// Hook up share button click
 document.addEventListener('click', e => {
   const btn = e.target.closest('#tierShareBtn');
-  if (btn) {
-    e.preventDefault();
-    shareTierListProject();
-  }
+  if (btn) { e.preventDefault(); shareTierListProject(); }
 });
-
-// Check shared tier on load and hash change
 window.addEventListener('hashchange', checkSharedTierFromUrl);
+
+// Expose on window for app.js
+window.renderTierBoard = renderTierBoard;
+window.checkSharedTierFromUrl = checkSharedTierFromUrl;
+window.saveTierListStorage = saveTierListStorage;
+window.loadTierListStorage = loadTierListStorage;
+
+})();

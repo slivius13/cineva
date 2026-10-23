@@ -1,5 +1,5 @@
 /* === CINEVA RATING SYSTEM & CANVAS EXPORTER === */
-
+(() => {
 
 const criteriaData=[
  {id:'story',name:'Сценарий / Образы',hint:'Логика истории, конфликты и диалоги, выразительность образов и символов; оценивай точность и оригинальность замысла.'},
@@ -15,7 +15,7 @@ criteriaData.forEach(c=>{
 });
 
 const $=id=>document.getElementById(id);
-const num=id=>Number($(id).value);
+const num = id => { const el = $(id); return el ? Number(el.value || 0) : 0; };
 
 const depthDescriptions={
  1:'1 балл — Развлекательный посыл: произведение прежде всего даёт аттракцион, эмоцию или жанровое удовольствие; самостоятельный смысловой слой почти не выражен.',
@@ -239,11 +239,11 @@ function showToast(msg, type='info', duration=3200){
   setTimeout(close, duration);
 }
 
-$('posterImg').addEventListener('error',()=>{
+const pImg = $('posterImg'); if (pImg) pImg.addEventListener('error',()=>{
   $('posterImg').style.display='none';
   $('posterPlaceholder').style.display='block';
 });
-$('posterImg').addEventListener('load',()=>{ if($('posterImg').naturalWidth>0){ $('posterImg').style.display='block'; $('posterPlaceholder').style.display='none'; setArtworkColors($('posterImg')); } });
+if (pImg) pImg.addEventListener('load',()=>{ if($('posterImg').naturalWidth>0){ $('posterImg').style.display='block'; $('posterPlaceholder').style.display='none'; setArtworkColors($('posterImg')); } });
 let tmdbSearchResults=[];
 let tmdbSearchController=null;
 async function fetchJsonWithTimeout(url,options={},timeoutMs=10000){
@@ -544,7 +544,7 @@ async function selectTmdbResult(index){
  }catch(error){$('tmdbStatus').textContent=`Не удалось загрузить карточку: ${error.message}`;}
  finally{buttons.forEach(b=>b.disabled=false);}
 }
-$('manualEntryBtn').addEventListener('click',()=>{
+const manualBtn = $('manualEntryBtn'); if (manualBtn) manualBtn.addEventListener('click',()=>{
  setMetadataMode('manual');
  $('editorDetails').hidden=false;$('resultCard').hidden=false;document.querySelector('.layout').classList.add('has-preview');
  clearTmdbResults();
@@ -556,93 +556,105 @@ $('tmdbSearchBtn').addEventListener('click',()=>{clearTimeout(searchDebounce);se
 $('tmdbQuery').addEventListener('input',scheduleTmdbSearch);
 $('tmdbQuery').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(searchDebounce);searchTmdb();}});
 
+
+const setText = (id, txt) => { const el = $(id); if (el) el.textContent = String(txt ?? ''); };
+
 function update(){
- updateValueDescriptions();
+ if (typeof updateValueDescriptions === 'function') updateValueDescriptions();
  // 1. Базовые критерии (4..40) и Качество (10%..100%)
  let baseSum=0;
  criteriaData.forEach(c=>{
   const v=num(c.id);baseSum+=v;
-  $('val-'+c.id).textContent=String(v);
-  $('share-'+c.id).textContent=String(v);
+  setText('val-'+c.id, v);
+  setText('share-'+c.id, v);
  });
- const qualityPct=baseSum*2.5; // 1 балл = 2.5%, макс 40 * 2.5 = 100%
+ const qualityPct=baseSum*2.5;
  const qualityFactor=qualityPct/100;
 
  // 2. Атмосфера / Вайб и 90-балльный рейтинг
  const vibe=num('vibe');
- const vibeMult=vibeMultipliers[vibe-1];
- $('vibeValue').textContent=String(vibe);
- $('share-vibe').textContent=String(vibe);
+ const vibeMult=vibeMultipliers[Math.max(0, Math.min(vibe-1, vibeMultipliers.length-1))] || 1.0;
+ setText('vibeValue', vibe);
+ setText('share-vibe', vibe);
  const score90=Math.round(baseSum*1.4*vibeMult);
- $('score').textContent=String(score90);
- $('previewBaseSum').textContent=`${baseSum}/40`;
- $('previewVibeMult').textContent=`×${vibeMult.toFixed(2)}`;
- $('previewQualityPct').textContent=`${fmtNum(qualityPct)}%`;
- $('baseSumBadge').textContent=`База: ${baseSum} / 40 · Качество: ${fmtNum(qualityPct)}%`;
+ setText('score', score90);
+ setText('previewBaseSum', `${baseSum}/40`);
+ setText('previewVibeMult', `×${vibeMult.toFixed(2)}`);
+ setText('previewQualityPct', `${fmtNum(qualityPct)}%`);
+ setText('baseSumBadge', `База: ${baseSum} / 40 · Качество: ${fmtNum(qualityPct)}%`);
 
  // 3. Ценность кино: (Редкость + Целостность + Глубина) * Качество * Влияние
  const rGenre=num('rarityGenre'), rFormat=num('rarityFormat');
- const rarity=rGenre+rFormat; // 1.0 .. 5.0
- $('rarityGenreVal').textContent=rGenre.toFixed(1);
- $('rarityFormatVal').textContent=rFormat.toFixed(1);
- $('rarityScoreDisplay').textContent=`${fmtNum(rarity)} / 5`;
+ const rarity=rGenre+rFormat;
+ setText('rarityGenreVal', rGenre.toFixed(1));
+ setText('rarityFormatVal', rFormat.toFixed(1));
+ setText('rarityScoreDisplay', `${fmtNum(rarity)} / 5`);
 
  const iFormat=num('integFormat'), iGenre=num('integGenre'), iMeaning=num('integMeaning');
- const integrity=Math.min(5,iFormat+iGenre+iMeaning); // 1.5 .. 5.0
- $('integFormatVal').textContent=iFormat.toFixed(1);
- $('integGenreVal').textContent=iGenre.toFixed(1);
- $('integMeaningVal').textContent=iMeaning.toFixed(1);
- $('integrityScoreDisplay').textContent=`${fmtNum(integrity)} / 5`;
+ const integrity=Math.min(5,iFormat+iGenre+iMeaning);
+ setText('integFormatVal', iFormat.toFixed(1));
+ setText('integGenreVal', iGenre.toFixed(1));
+ setText('integMeaningVal', iMeaning.toFixed(1));
+ setText('integrityScoreDisplay', `${fmtNum(integrity)} / 5`);
 
- const depth=num('depth'); // 1 .. 5
- $('depthScoreDisplay').textContent=`${depth} / 5`;
- $('depthDesc').textContent=depthDescriptions[depth];
+ const depth=num('depth');
+ setText('depthScoreDisplay', `${depth} / 5`);
+ setText('depthDesc', depthDescriptions[depth] || '');
 
  const impScale=num('impactScale'), impHype=num('impactHype');
  const impSum=(impScale+impHype).toFixed(1);
  const impactMult=impactMultiplierTable[impSum]||1.62;
- $('impactScaleVal').textContent=impScale.toFixed(1);
- $('impactHypeVal').textContent=impHype.toFixed(1);
- $('impactScoreDisplay').textContent=`×${impactMult.toFixed(2)}`;
+ setText('impactScaleVal', impScale.toFixed(1));
+ setText('impactHypeVal', impHype.toFixed(1));
+ setText('impactScoreDisplay', `×${impactMult.toFixed(2)}`);
 
  const rawValue=(rarity+integrity+depth)*qualityFactor*impactMult;
  const valueFixed=rawValue.toFixed(2);
- $('valueScore').textContent=valueFixed;
- $('valueFormulaBadge').textContent=`Ценность: ${valueFixed} / 30`;
+ setText('valueScore', valueFixed);
+ setText('valueFormulaBadge', `Ценность: ${valueFixed} / 30`);
 
- // Чипы индекса ценности
- $('chipRarity').textContent=`${fmtNum(rarity)}/5`;
- $('chipIntegrity').textContent=`${fmtNum(integrity)}/5`;
- $('chipDepth').textContent=`${depth}/5`;
- $('chipQuality').textContent=`${fmtNum(qualityPct)}%`;
- $('chipImpact').textContent=`×${impactMult.toFixed(2)}`;
+ setText('chipRarity', `${fmtNum(rarity)}/5`);
+ setText('chipIntegrity', `${fmtNum(integrity)}/5`);
+ setText('chipDepth', `${depth}/5`);
+ setText('chipQuality', `${fmtNum(qualityPct)}%`);
+ setText('chipImpact', `×${impactMult.toFixed(2)}`);
 
- // Метаданные и статус (Tier)
- const kindUpper=$('kind').value.toUpperCase();
+ const kindEl = $('kind');
+ const kindUpper = (kindEl ? kindEl.value : 'MOVIE').toUpperCase();
  const tier=getValueTier(rawValue,kindUpper);
- document.documentElement.style.setProperty('--tier-color',tier.color);
- document.documentElement.style.setProperty('--tier-bg',tier.bg);
- $('tierPill').textContent=tier.name;
- $('previewTierShort').textContent=tier.short;
- $('previewTierRange').textContent=tier.range;
+ if (document.documentElement && document.documentElement.style) {
+   document.documentElement.style.setProperty('--tier-color',tier.color);
+   document.documentElement.style.setProperty('--tier-bg',tier.bg);
+ }
+ setText('tierPill', tier.name);
+ setText('previewTierShort', tier.short);
+ setText('previewTierRange', tier.range);
 
- const title=$('title').value.trim()||'Название произведения';
- $('previewTitle').textContent=title;
- $('previewDirector').textContent=$('director').value.trim()||'Режиссёр / создатель';
- $('previewYear').textContent=$('year').value.trim()||'Год';
- $('previewGenre').textContent=displayGenre($('genre').value.trim())||'Жанр';
- $('previewKind').textContent=kindUpper;
- document.title='CINEVA — Киноэнциклопедия';
+ const titleEl = $('title');
+ const title = (titleEl ? titleEl.value.trim() : '') || 'Название произведения';
+ setText('previewTitle', title);
+ const dirEl = $('director');
+ setText('previewDirector', (dirEl ? dirEl.value.trim() : '') || 'Режиссёр / создатель');
+ const yrEl = $('year');
+ setText('previewYear', (yrEl ? yrEl.value.trim() : '') || 'Год');
+ const gnEl = $('genre');
+ setText('previewGenre', (gnEl ? displayGenre(gnEl.value.trim()) : '') || 'Жанр');
+ setText('previewKind', kindUpper);
 }
+
 
 [
  'title','director','year','genre','kind','vibe',
  'rarityGenre','rarityFormat','integFormat','integGenre','integMeaning','depth','impactScale','impactHype',
  ...criteriaData.map(c=>c.id)
-].forEach(id=>$(id).addEventListener('input',update));
+]
+.forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener('input', update);
+});
 
 let imageUrl=null;
-$('posterFile').addEventListener('change',e=>{
+const pFile = $('posterFile'); if (pFile) pFile.addEventListener('change',e=>{
  const file=e.target.files&&e.target.files[0];if(!file)return;
  if(imageUrl)URL.revokeObjectURL(imageUrl);
  imageUrl=URL.createObjectURL(file);
@@ -1019,89 +1031,78 @@ function saveReviewerName(){
  try{localStorage.setItem('cinevaReviewerName',reviewerName);}catch(e){}
  reviewerOverlay.hidden=true;
 }
-$('reviewerSave').addEventListener('click',saveReviewerName);
-$('reviewerNameInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveReviewerName();});
-$('reviewerEdit').addEventListener('click',showReviewerSetup);
-$('reviewerHeaderName').textContent=reviewerName||'не задан';
+const revSave = $('reviewerSave'); if (revSave) revSave.addEventListener('click',saveReviewerName);
+const revInp = $('reviewerNameInput'); if (revInp) revInp.addEventListener('keydown',e=>{if(e.key==='Enter')saveReviewerName();});
+const revEdit = $('reviewerEdit'); if (revEdit) revEdit.addEventListener('click',showReviewerSetup);
+const rhn = $('reviewerHeaderName'); if (rhn) rhn.textContent = window.reviewerName || 'не задан';
 // Имя рецензента необязательно: диалог открывается только по запросу из вкладки оценки.
 reviewerOverlay.hidden=true;
 
-$('saveImage').addEventListener('click',downloadCardPng);
+const sImg = $('saveImage'); if (sImg) sImg.addEventListener('click',downloadCardPng);
 
-$('reset').addEventListener('click',()=>{
- clearTimeout(searchDebounce);if(tmdbSearchController)tmdbSearchController.abort();searchSequence++;
- ['title','director','year','genre'].forEach(id=>$(id).value='');
- $('tmdbQuery').value='';clearTmdbResults();$('editorDetails').hidden=true;setMetadataMode('unset');$('resultCard').hidden=true;document.querySelector('.layout').classList.remove('has-preview');
- $('tmdbStatus').textContent='Введи название фильма или сериала.';
- $('kind').selectedIndex=0;
- criteriaData.forEach(c=>$(c.id).value=5);
- $('vibe').value=5;
- $('rarityGenre').value='1.0';$('rarityFormat').value='1.0';
- $('integFormat').value='1.0';$('integGenre').value='1.5';$('integMeaning').value='1.0';
- $('depth').value=3;
- $('impactScale').value='2.0';$('impactHype').value='2.0';
- $('posterFile').value='';
- if(imageUrl){URL.revokeObjectURL(imageUrl);imageUrl=null;}
- $('posterImg').removeAttribute('src');$('posterImg').style.display='none';
- $('posterPlaceholder').style.display='block';
- document.documentElement.style.setProperty('--art-a','#273a48');
- document.documentElement.style.setProperty('--art-b','#171923');
- document.documentElement.style.setProperty('--art-accent','#c5ff65');
- update();
+const rBtn = $('reset'); if (rBtn) rBtn.addEventListener('click',()=>{
+  clearTimeout(searchDebounce);if(tmdbSearchController)tmdbSearchController.abort();searchSequence++;
+  ['title','director','year','genre'].forEach(id => { const el = $(id); if (el) el.value = ''; });
+  const tq = $('tmdbQuery'); if (tq) tq.value = '';
+  clearTmdbResults();
+  const ed = $('editorDetails'); if (ed) ed.hidden = true;
+  setMetadataMode('unset');
+  const rc = $('resultCard'); if (rc) rc.hidden = true;
+  const layout = document.querySelector('.layout'); if (layout) layout.classList.remove('has-preview');
+  const ts = $('tmdbStatus'); if (ts) ts.textContent = 'Введи название фильма или сериала.';
+  const kd = $('kind'); if (kd) kd.selectedIndex = 0;
+  criteriaData.forEach(c => { const el = $(c.id); if (el) el.value = 5; });
+  const setVal = (id, v) => { const el = $(id); if (el) el.value = v; };
+  setVal('vibe', 5);
+  setVal('rarityGenre', '1.0');
+  setVal('rarityFormat', '1.0');
+  setVal('integFormat', '1.0');
+  setVal('integGenre', '1.5');
+  setVal('integMeaning', '1.0');
+  setVal('depth', 3);
+  setVal('impactScale', '2.0');
+  setVal('impactHype', '2.0');
+  setVal('posterFile', '');
+  if (imageUrl) { URL.revokeObjectURL(imageUrl); imageUrl = null; }
+  const pImg = $('posterImg'); if (pImg) { pImg.removeAttribute('src'); pImg.style.display = 'none'; }
+  const pPh = $('posterPlaceholder'); if (pPh) pPh.style.display = 'block';
+  if (document.documentElement && document.documentElement.style) {
+    document.documentElement.style.setProperty('--art-a','#273a48');
+    document.documentElement.style.setProperty('--art-b','#171923');
+    document.documentElement.style.setProperty('--art-accent','#c5ff65');
+  }
+  update();
 });
 
 update();
 
 
-
-// ==========================================
-// RATING PROJECT SHARING VIA URL
-// ==========================================
+// Rating Project Sharing via URL
 function shareRatingProject() {
   try {
     const title = ($('title') ? $('title').value.trim() : '') || 'Кинопроизведение';
     const director = ($('director') ? $('director').value.trim() : '');
     const year = ($('year') ? $('year').value.trim() : '');
     const posterSrc = ($('posterImg') && $('posterImg').style.display !== 'none') ? $('posterImg').src : '';
-    
-    // Collect active values for criteria
-    const criteriaScores = {};
-    if (typeof criteriaData !== 'undefined' && criteriaData.groups) {
-      criteriaData.groups.forEach(g => {
-        g.criteria.forEach(c => {
-          const inp = $(c.id);
-          if (inp) criteriaScores[c.id] = inp.value;
-        });
+    const scores = {};
+    if (typeof criteriaData !== 'undefined') {
+      criteriaData.forEach(c => {
+        const inp = $(c.id);
+        if (inp) scores[c.id] = inp.value;
       });
     }
-
-    const payload = {
-      t: title,
-      d: director,
-      y: year,
-      p: posterSrc,
-      s: criteriaScores,
-      rev: window.reviewerName || ''
-    };
-
+    const payload = { t: title, d: director, y: year, p: posterSrc, s: scores, rev: window.reviewerName || '' };
     const b64 = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
     const shareUrl = `${window.location.origin}${window.location.pathname}#rate=${b64}`;
-
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(shareUrl).then(() => {
-        if (typeof showToast === 'function') {
-          showToast('🔗 Ссылка на карточку оценки скопирована!', 'success');
-        } else {
-          alert('Ссылка на оценку скопирована в буфер обмена!');
-        }
-      }).catch(() => {
-        prompt('Скопируйте ссылку на оценку:', shareUrl);
-      });
+        if (typeof window.showToast === 'function') window.showToast('🔗 Ссылка на оценку скопирована в буфер обмена!', 'success');
+      }).catch(() => prompt('Скопируйте ссылку на оценку:', shareUrl));
     } else {
       prompt('Скопируйте ссылку на оценку:', shareUrl);
     }
-  } catch (err) {
-    console.error('Share rating failed:', err);
+  } catch (e) {
+    console.error(e);
   }
 }
 
@@ -1110,15 +1111,10 @@ function checkSharedRatingFromUrl() {
     const hash = window.location.hash || '';
     const search = window.location.search || '';
     let rateParam = null;
-    if (hash.includes('rate=')) {
-      rateParam = hash.split('rate=')[1].split('&')[0];
-    } else if (search.includes('rate=')) {
-      const p = new URLSearchParams(search);
-      rateParam = p.get('rate');
-    }
+    if (hash.includes('rate=')) rateParam = hash.split('rate=')[1].split('&')[0];
+    else if (search.includes('rate=')) rateParam = new URLSearchParams(search).get('rate');
     if (rateParam) {
-      const json = decodeURIComponent(escape(atob(decodeURIComponent(rateParam))));
-      const payload = JSON.parse(json);
+      const payload = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(rateParam)))));
       if (payload && payload.t) {
         if ($('title')) $('title').value = payload.t || '';
         if ($('director')) $('director').value = payload.d || '';
@@ -1142,22 +1138,30 @@ function checkSharedRatingFromUrl() {
           window.reviewerName = payload.rev;
           if ($('reviewerHeaderName')) $('reviewerHeaderName').textContent = payload.rev;
         }
-        if (typeof update === 'function') update();
-        if (typeof showPage === 'function') showPage('rating');
-        if (typeof showToast === 'function') {
-          showToast(`⭐ Загружена оценка для «${payload.t}»!`, 'success');
-        }
+        update();
+        if (typeof window.showPage === 'function') window.showPage('rating');
+        if (typeof window.showToast === 'function') window.showToast(`⭐ Загружена оценка для «${payload.t}»!`, 'success');
       }
     }
-  } catch (e) {
-    console.warn('Could not parse shared rating link:', e);
-  }
+  } catch (e) {}
 }
 
-// Hook up share button when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  const shareBtn = $('ratingShareBtn');
-  if (shareBtn) shareBtn.addEventListener('click', shareRatingProject);
-  checkSharedRatingFromUrl();
+document.addEventListener('click', e => {
+  const btn = e.target.closest('#ratingShareBtn');
+  if (btn) { e.preventDefault(); shareRatingProject(); }
 });
 window.addEventListener('hashchange', checkSharedRatingFromUrl);
+
+// Bridge exports for app.js
+window.showToast = showToast;
+window.isApiSetupComplete = isApiSetupComplete;
+window.getTmdbKey = getTmdbKey;
+window.getKpKey = getKpKey;
+window.saveApiKeys = saveApiKeys;
+window.setArtworkColors = setArtworkColors;
+window.setMetadataMode = setMetadataMode;
+window.updateRating = update;
+window.update = update;
+window.checkSharedRatingFromUrl = checkSharedRatingFromUrl;
+
+})();

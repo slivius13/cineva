@@ -1,7 +1,23 @@
 /* === CINEVA CORE APPLICATION & ROUTER === */
+(() => {
 
   const byId = id => document.getElementById(id);
-window.byId = byId;
+  const $ = id => document.getElementById(id);
+  window.$ = $;
+  window.byId = byId;
+
+  // Bridge functions from rating.js
+  const showToast = (...args) => (typeof window.showToast === 'function' ? window.showToast(...args) : null);
+  const isApiSetupComplete = (...args) => (typeof window.isApiSetupComplete === 'function' ? window.isApiSetupComplete(...args) : true);
+  const getTmdbKey = (...args) => (typeof window.getTmdbKey === 'function' ? window.getTmdbKey(...args) : (args[0] || ''));
+  const getKpKey = (...args) => (typeof window.getKpKey === 'function' ? window.getKpKey(...args) : (args[0] || ''));
+  const saveApiKeys = (...args) => (typeof window.saveApiKeys === 'function' ? window.saveApiKeys(...args) : null);
+  const setArtworkColors = (...args) => (typeof window.setArtworkColors === 'function' ? window.setArtworkColors(...args) : null);
+  const setMetadataMode = (...args) => (typeof window.setMetadataMode === 'function' ? window.setMetadataMode(...args) : null);
+  const update = (...args) => (typeof window.updateRating === 'function' ? window.updateRating(...args) : null);
+
+
+  // byId declared above
   const safe = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const posterUrl = (path, size='w500') => path ? `https://image.tmdb.org/t/p/${size}${path}` : '';
   const ratingText = value => value && Number(value)>0 ? Number(value).toFixed(1) : '—';
@@ -190,7 +206,7 @@ window.byId = byId;
     setActiveNav(key === 'detail' ? (previousPage || 'home') : key);
     window.scrollTo({top:0, behavior:'smooth'});
     if (key === 'watchlist') updateWatchlistUI();
-    if (key === 'tierlist') renderTierBoard();
+    if (key === 'tierlist' && typeof window.renderTierBoard === 'function') window.renderTierBoard();
     if (window.location.protocol.startsWith('http')) {
       const pageFile = key === 'home' ? 'index.html' : `${key}.html`;
       if (!window.location.pathname.endsWith(pageFile) && !skipHistory) {
@@ -1243,7 +1259,7 @@ window.byId = byId;
 
   function watchForImageChanges(root) {
     if (!root) return;
-    if (root instanceof HTMLImageElement) prepareImage(root);
+    if (typeof HTMLImageElement !== 'undefined' && root instanceof HTMLImageElement) prepareImage(root);
     if (root.querySelectorAll) root.querySelectorAll('img').forEach(prepareImage);
   }
 
@@ -1440,11 +1456,19 @@ window.byId = byId;
   }
 
   // Initialize Tier List Storage & URL routing
-  loadTierListStorage();
+  if (typeof window.loadTierListStorage === 'function') window.loadTierListStorage();
   checkUrlRouting();
-  if (typeof checkSharedTierFromUrl === 'function') checkSharedTierFromUrl();
-  if (typeof checkSharedRatingFromUrl === 'function') checkSharedRatingFromUrl();
+  if (typeof window.checkSharedTierFromUrl === 'function') window.checkSharedTierFromUrl();
+  if (typeof window.checkSharedRatingFromUrl === 'function') window.checkSharedRatingFromUrl();
 
   // Initial load waits until the first-run source choice has been made.
   updateWatchlistCount();
   if (openApiWelcomeIfNeeded()) loadHomeShelves();
+
+  // Expose helpers globally
+  window.showPage = showPage;
+  window.openTitle = openTitle;
+  window.openPerson = openPerson;
+  window.openKinopoiskTitle = openKinopoiskTitle;
+  window.getWatchlist = getWatchlist;
+})();
