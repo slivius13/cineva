@@ -1,14 +1,17 @@
 /* === CINEVA TIER LIST SYSTEM (MOVIES & ACTORS) === */
 (() => {
   const byId = id => document.getElementById(id);
-  const safe = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const showToast = (msg, type) => (typeof window.showToast === 'function' ? window.showToast(msg, type) : null);
-  const openTitle = (id, type) => (typeof window.openTitle === 'function' ? window.openTitle(id, type) : null);
-  const openPerson = (id) => (typeof window.openPerson === 'function' ? window.openPerson(id) : null);
-  const getWatchlist = () => (typeof window.getWatchlist === 'function' ? window.getWatchlist() : []);
+  const safe = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
 
-  // TIER LIST SYSTEM (MOVIES & ACTORS)
-  // ==========================================
+  const showToast = (msg, type) => (typeof window.showToast === 'function' ? window.showToast(msg, type) : null);
+  const posterUrl = (path, size = 'w500') => (typeof window.posterUrl === 'function' ? window.posterUrl(path, size) : (path ? `https://image.tmdb.org/t/p/${size}${path}` : ''));
+  const releaseYear = item => (typeof window.releaseYear === 'function' ? window.releaseYear(item) : String((item.release_date || item.first_air_date || item.year || '').slice(0, 4)));
+  const getWatchlist = () => (typeof window.getWatchlist === 'function' ? window.getWatchlist() : []);
+  const searchUnifiedMedia = (...args) => (typeof window.searchUnifiedMedia === 'function' ? window.searchUnifiedMedia(...args) : Promise.resolve({ results: [] }));
+  const searchTmdbGlobal = (...args) => (typeof window.CINEVA?.searchTmdbGlobal === 'function' ? window.CINEVA.searchTmdbGlobal(...args) : Promise.resolve([]));
+
   const DEFAULT_TIER_ROWS = [
     { id: 'row_s', label: 'S', color: '#ff4466', items: [] },
     { id: 'row_a', label: 'A', color: '#ff8c38', items: [] },
@@ -22,13 +25,13 @@
   let tierStores = {
     movies: {
       title: 'Мой кинотирлист',
-      author: (window.reviewerName || ''),
+      author: window.reviewerName || '',
       rows: JSON.parse(JSON.stringify(DEFAULT_TIER_ROWS)),
       unranked: []
     },
     actors: {
       title: 'Мой тирлист актёров',
-      author: (window.reviewerName || ''),
+      author: window.reviewerName || '',
       rows: JSON.parse(JSON.stringify(DEFAULT_TIER_ROWS)),
       unranked: []
     }
@@ -40,7 +43,6 @@
 
   function loadTierListStorage() {
     try {
-      // Movies storage
       const savedMovies = localStorage.getItem('cineva_tierlist_movies') || localStorage.getItem('cineva_tierlist_data');
       if (savedMovies) {
         const parsed = JSON.parse(savedMovies);
@@ -49,7 +51,6 @@
           if (!Array.isArray(tierStores.movies.unranked)) tierStores.movies.unranked = [];
         }
       }
-      // Actors storage
       const savedActors = localStorage.getItem('cineva_tierlist_actors');
       if (savedActors) {
         const parsed = JSON.parse(savedActors);
@@ -59,7 +60,6 @@
         }
       }
     } catch (_) {}
-
     updateTierModeUI();
   }
 
@@ -73,7 +73,6 @@
 
       const key = activeTierKind === 'actors' ? 'cineva_tierlist_actors' : 'cineva_tierlist_movies';
       localStorage.setItem(key, JSON.stringify(data));
-      // Also sync legacy key
       if (activeTierKind === 'movies') {
         localStorage.setItem('cineva_tierlist_data', JSON.stringify(data));
       }
@@ -84,14 +83,12 @@
     const isActors = activeTierKind === 'actors';
     const data = getActiveTierData();
 
-    // Mode buttons
     document.querySelectorAll('.tier-mode-btn').forEach(btn => {
       const active = btn.dataset.tierKind === activeTierKind;
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', String(active));
     });
 
-    // Titles and descriptions
     const mainTitle = byId('tierlistMainTitle');
     const desc = byId('tierlistDesc');
     const searchInp = byId('tierSearchInput');
@@ -105,14 +102,15 @@
     if (titleInput) titleInput.value = data.title || (isActors ? 'Мой тирлист актёров' : 'Мой кинотирлист');
     if (authorInput) authorInput.value = data.author || (window.reviewerName || '');
 
-    // Clear search status
     const status = byId('tierSearchStatus');
     const results = byId('tierSearchResults');
     if (status) status.textContent = '';
     if (results) { results.hidden = true; results.innerHTML = ''; }
   }
 
-  // Drag and drop global state
+  // ==========================================
+  // DRAG & DROP AND RENDERING
+  // ==========================================
   let draggedItemData = null;
   let draggedSourceZone = null;
   let draggedSourceIndex = -1;
@@ -144,7 +142,7 @@
       `;
     }).join('');
 
-    // Render unranked pool
+    // Unranked zone
     const unrankedZone = byId('tierUnrankedZone');
     const unrankedCountEl = byId('tierUnrankedCount');
     if (unrankedCountEl) unrankedCountEl.textContent = String(data.unranked.length);
@@ -164,12 +162,12 @@
     const poster = item.poster || item.posterUrl || (isPerson ? (item.profile_path ? posterUrl(item.profile_path, 'w185') : '') : (item.poster_path ? posterUrl(item.poster_path, 'w185') : ''));
     const title = item.title || item.name || item.nameRu || 'Без названия';
     const meta = isPerson ? (item.known_for_department || 'Кино') : (item.year || releaseYear(item) || '');
-    const tooltip = `${title}${meta ? ` (${meta})` : ''} · Нажмите, чтобы открыть профиль`;
+    const tooltip = `${title}${meta ? ` (${meta})` : ''} · Нажмите для открытия информации`;
 
     return `
       <div class="tier-item" draggable="true" tabindex="0"
            data-zone="${safe(zone)}" data-index="${index}"
-           data-id="${safe(item.id)}" data-type="${safe(item.media_type || (activeTierKind==='actors'?'person':'movie'))}"
+           data-id="${safe(item.id)}" data-type="${safe(item.media_type || (activeTierKind === 'actors' ? 'person' : 'movie'))}"
            data-source="${safe(item.source || 'tmdb')}"
            title="${safe(tooltip)}">
         ${poster ? `<img src="${safe(poster)}" alt="${safe(title)}" loading="lazy">` : `<div class="tier-item-no-img">${safe(title.slice(0, 20))}</div>`}
@@ -240,7 +238,7 @@
       });
     });
 
-    // 3. Drop zones with animated placement ghost indicator
+    // 3. Drop zones with placement ghost slot indicator
     document.querySelectorAll('.tier-dropzone').forEach(zoneEl => {
       zoneEl.addEventListener('dragover', event => {
         event.preventDefault();
@@ -251,7 +249,6 @@
 
         if (!draggedItemData) return;
 
-        // Calculate insertion position between items
         const cards = [...zoneEl.querySelectorAll('.tier-item:not(.is-dragging)')];
         let insertBeforeNode = null;
         let insertIndex = cards.length;
@@ -267,7 +264,6 @@
           }
         }
 
-        // Get or create animated ghost placement indicator
         let indicator = zoneEl.querySelector('.tier-drop-indicator');
         if (!indicator) {
           document.querySelectorAll('.tier-drop-indicator').forEach(el => el.remove());
@@ -310,27 +306,24 @@
 
         const targetZone = zoneEl.dataset.zone === 'unranked' ? 'unranked' : zoneEl.dataset.rowId;
         const insertIndex = parseInt(zoneEl.dataset.insertIndex || '-1', 10);
-        const data = getActiveTierData();
+        const curData = getActiveTierData();
 
-        // Remove from source if moved within board
         if (draggedSourceZone === 'unranked') {
-          data.unranked.splice(draggedSourceIndex, 1);
+          curData.unranked.splice(draggedSourceIndex, 1);
         } else if (draggedSourceZone && draggedSourceZone !== 'search') {
-          const srcRow = data.rows.find(r => r.id === draggedSourceZone);
+          const srcRow = curData.rows.find(r => r.id === draggedSourceZone);
           if (srcRow) srcRow.items.splice(draggedSourceIndex, 1);
         }
 
-        // Target array
         let targetArr;
         if (targetZone === 'unranked') {
-          targetArr = data.unranked;
+          targetArr = curData.unranked;
         } else {
-          const tgtRow = data.rows.find(r => r.id === targetZone);
+          const tgtRow = curData.rows.find(r => r.id === targetZone);
           if (tgtRow) targetArr = tgtRow.items;
         }
 
         if (targetArr) {
-          // If already in target zone, remove old duplicate
           const dupIdx = targetArr.findIndex(i => String(i.id) === String(draggedItemData.id));
           if (dupIdx >= 0) targetArr.splice(dupIdx, 1);
 
@@ -348,7 +341,9 @@
     });
   }
 
-  // Tier Search
+  // ==========================================
+  // TIER QUICK SEARCH
+  // ==========================================
   const tierSearchInput = byId('tierSearchInput');
   const tierSearchBtn = byId('tierSearchBtn');
   const tierSearchStatus = byId('tierSearchStatus');
@@ -444,9 +439,11 @@
     });
   }
 
-  // Tierlist Events Delegation
+  // ==========================================
+  // EVENT DELEGATION
+  // ==========================================
   document.addEventListener('click', event => {
-    // 0. Switcher between Movies and Actors Mode
+    // Mode switcher
     const modeBtn = event.target.closest('[data-tier-kind]');
     if (modeBtn) {
       const newKind = modeBtn.dataset.tierKind;
@@ -460,7 +457,7 @@
       return;
     }
 
-    // 1. Add item from tier search results
+    // Add item from search
     const addBtn = event.target.closest('[data-tier-add-item]');
     if (addBtn) {
       try {
@@ -479,7 +476,7 @@
       return;
     }
 
-    // 2. Click on tier item poster -> Open Movie / Actor Details!
+    // Click poster -> Open Details
     const tierCard = event.target.closest('.tier-item');
     const delBtn = event.target.closest('.tier-item-del');
     if (tierCard && !delBtn) {
@@ -487,17 +484,12 @@
       const type = tierCard.dataset.type || (activeTierKind === 'actors' ? 'person' : 'movie');
       const source = tierCard.dataset.source || 'tmdb';
 
-      if (type === 'person') {
-        openPerson(id);
-      } else if (source === 'kinopoisk') {
-        openKinopoiskTitle(id);
-      } else {
-        openTitle(id, type);
-      }
+      // Route to search.html with detail link
+      window.location.href = `search.html?open=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}${source === 'kinopoisk' ? '&source=kinopoisk' : ''}`;
       return;
     }
 
-    // 3. Delete tier item (✕)
+    // Delete item (X)
     if (delBtn) {
       event.stopPropagation();
       const zone = delBtn.dataset.tierCardDel;
@@ -514,7 +506,7 @@
       return;
     }
 
-    // 4. Move row up / down
+    // Move row
     const moveBtn = event.target.closest('[data-tier-move]');
     if (moveBtn) {
       const dir = moveBtn.dataset.tierMove;
@@ -534,7 +526,7 @@
       return;
     }
 
-    // 5. Delete Row
+    // Delete row
     const delRowBtn = event.target.closest('[data-tier-delete]');
     if (delRowBtn) {
       const rowId = delRowBtn.dataset.tierDelete;
@@ -555,25 +547,20 @@
       return;
     }
 
-    // 6. Add new Row
+    // Add row
     if (event.target.closest('#tierAddRowBtn')) {
       const colors = ['#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#14b8a6'];
       const data = getActiveTierData();
       const newColor = colors[data.rows.length % colors.length];
       const newId = 'row_' + Date.now();
-      data.rows.push({
-        id: newId,
-        label: 'НОВЫЙ',
-        color: newColor,
-        items: []
-      });
+      data.rows.push({ id: newId, label: 'НОВЫЙ', color: newColor, items: [] });
       saveTierListStorage();
       renderTierBoard();
       showToast('Новый ряд добавлен в тирлист', 'success');
       return;
     }
 
-    // 7. Load from Watchlist
+    // Load from Watchlist
     if (event.target.closest('#tierLoadWatchlistBtn')) {
       const wl = getWatchlist();
       if (!wl.length) {
@@ -606,7 +593,7 @@
       return;
     }
 
-    // 8. Clear Pool
+    // Clear pool
     if (event.target.closest('#tierClearPoolBtn')) {
       const data = getActiveTierData();
       if (data.unranked.length && confirm('Очистить список нераспределённых элементов?')) {
@@ -618,7 +605,7 @@
       return;
     }
 
-    // 9. Reset Tier List
+    // Reset tierlist
     if (event.target.closest('#tierResetBtn')) {
       if (confirm(`Сбросить тирлист ${activeTierKind === 'actors' ? 'актёров' : 'фильмов'} к начальному состоянию?`)) {
         const data = getActiveTierData();
@@ -631,7 +618,7 @@
       return;
     }
 
-    // 10. Export JSON
+    // Export JSON
     if (event.target.closest('#tierExportJsonBtn')) {
       saveTierListStorage();
       const data = getActiveTierData();
@@ -648,14 +635,19 @@
       return;
     }
 
-    // 11. Export PNG
+    // Export PNG
     if (event.target.closest('#tierExportPngBtn')) {
       exportTierListPng();
       return;
     }
+
+    // Share Tierlist
+    if (event.target.closest('#tierShareBtn')) {
+      shareTierListProject();
+      return;
+    }
   });
 
-  // Color picker change event
   document.addEventListener('change', event => {
     const colorInput = event.target.closest('[data-tier-color]');
     if (colorInput) {
@@ -670,7 +662,6 @@
       return;
     }
 
-    // Import JSON file input
     const jsonFileInput = event.target.closest('#tierImportJsonInput');
     if (jsonFileInput && jsonFileInput.files && jsonFileInput.files[0]) {
       const file = jsonFileInput.files[0];
@@ -700,7 +691,6 @@
     }
   });
 
-  // Label inline editing blur
   document.addEventListener('blur', event => {
     const labelEl = event.target.closest('[data-tier-label]');
     if (labelEl) {
@@ -717,7 +707,62 @@
     }
   }, true);
 
-  // PNG Export Generator with Canvas (CINEVA aesthetic & zero voids)
+  // ==========================================
+  // CANVAS PNG EXPORT
+  // ==========================================
+  function roundedRect(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function wrapCanvasText(ctx, text, maxWidth, maxLines) {
+    const words = String(text || '').split(/\s+/).filter(Boolean), lines = [];
+    let line = '';
+    for (const word of words) {
+      const next = line ? line + ' ' + word : word;
+      if (ctx.measureText(next).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+        if (lines.length === maxLines - 1) break;
+      } else line = next;
+    }
+    if (line && lines.length < maxLines) lines.push(line);
+    if (lines.length === maxLines && words.join(' ') !== lines.join(' ')) {
+      let last = lines[lines.length - 1];
+      while (last && ctx.measureText(last + '…').width > maxWidth) last = last.slice(0, -1);
+      lines[lines.length - 1] = last.trim() + '…';
+    }
+    return lines;
+  }
+
+  function loadImageForCanvas(url) {
+    return new Promise((resolve, reject) => {
+      if (!url) return reject(new Error('No URL'));
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => {
+        try {
+          const u = new URL(url);
+          const proxy = new Image();
+          proxy.crossOrigin = 'anonymous';
+          proxy.onload = () => resolve(proxy);
+          proxy.onerror = reject;
+          proxy.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(u.host + u.pathname + u.search);
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.src = url;
+    });
+  }
+
   async function exportTierListPng() {
     const exportBtn = byId('tierExportPngBtn');
     if (exportBtn) { exportBtn.disabled = true; exportBtn.textContent = 'Рендерим PNG…'; }
@@ -725,13 +770,11 @@
       const data = getActiveTierData();
       const isActors = activeTierKind === 'actors';
 
-      // 1. Analyze items to calculate optimal non-empty dimensions
       const maxItemsInRow = Math.max(0, ...data.rows.map(r => (r.items || []).length));
-      // Adaptive columns: min 4, max 9 cols, exactly matching content width without right-side voids
       const maxCols = Math.min(9, Math.max(4, maxItemsInRow));
 
       const cardW = 90;
-      const cardH = 135; // True 2:3 poster/portrait aspect ratio
+      const cardH = 135;
       const cardGap = 10;
       const rowPad = 12;
       const labelW = 120;
@@ -740,12 +783,9 @@
       const gridW = maxCols * cardW + (maxCols - 1) * cardGap;
       const W = pad * 2 + labelW + rowPad * 2 + gridW;
 
-      // Calculate dynamic row heights (compact empty rows, multi-line rows if items > maxCols)
       const rowLayouts = data.rows.map(row => {
         const count = (row.items || []).length;
-        if (count === 0) {
-          return { row, rowHeight: 68, rowsCount: 0 };
-        }
+        if (count === 0) return { row, rowHeight: 68, rowsCount: 0 };
         const rowsCount = Math.ceil(count / maxCols);
         const rowHeight = rowPad * 2 + rowsCount * cardH + (rowsCount - 1) * cardGap;
         return { row, rowHeight, rowsCount };
@@ -762,7 +802,6 @@
       canvas.height = H;
       const ctx = canvas.getContext('2d');
 
-      // 1. Deep cinematic background matching CINEVA Rating Card
       const bg = ctx.createLinearGradient(0, 0, W, H);
       bg.addColorStop(0, '#151b2a');
       bg.addColorStop(0.48, '#0e111a');
@@ -770,14 +809,12 @@
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
-      // Radial ambient glow in the upper-right corner
       const glow = ctx.createRadialGradient(W - 100, 80, 20, W - 100, 80, 480);
       glow.addColorStop(0, isActors ? 'rgba(189, 131, 255, 0.18)' : 'rgba(197, 255, 101, 0.16)');
       glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, W, H);
 
-      // Glassmorphic Outer Card Frame
       ctx.fillStyle = 'rgba(9, 12, 20, 0.74)';
       roundedRect(ctx, 18, 18, W - 36, H - 36, 26);
       ctx.fill();
@@ -786,10 +823,7 @@
       roundedRect(ctx, 18, 18, W - 36, H - 36, 26);
       ctx.stroke();
 
-      // 2. Header (CINEVA Brand + Title + Author Badge)
       const topY = 36;
-
-      // CINEVA Logo Mark
       const logoGrad = ctx.createLinearGradient(pad, topY, pad + 38, topY + 38);
       logoGrad.addColorStop(0, isActors ? '#bd83ff' : '#c5ff65');
       logoGrad.addColorStop(1, '#5eead4');
@@ -803,18 +837,16 @@
       ctx.fillText('C', pad + 19, topY + 27);
       ctx.textAlign = 'left';
 
-      // Title & Eyebrow
       ctx.font = '900 12px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = isActors ? '#d7aaff' : '#c5ff65';
       ctx.fillText(isActors ? 'CINEVA · ACTORS TIER LIST' : 'CINEVA · CINEMA TIER LIST', pad + 48, topY + 15);
 
       ctx.font = '900 22px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#f5f7fc';
-      const listTitle = byId('tierlistTitleInput').value.trim() || (isActors ? 'Тирлист актёров' : 'Кинотирлист');
+      const listTitle = byId('tierlistTitleInput')?.value.trim() || (isActors ? 'Тирлист актёров' : 'Кинотирлист');
       ctx.fillText(listTitle, pad + 48, topY + 38);
 
-      // Author & Date Pill Badge on top right
-      const author = byId('tierlistAuthorInput').value.trim() || (window.reviewerName || 'Киноман CINEVA');
+      const author = byId('tierlistAuthorInput')?.value.trim() || (window.reviewerName || 'Киноман CINEVA');
       const authorText = `Автор: ${author}`;
       ctx.font = '700 12px system-ui, -apple-system, sans-serif';
       const authW = ctx.measureText(authorText).width + 30;
@@ -826,20 +858,14 @@
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
       ctx.lineWidth = 1;
       ctx.stroke();
-
       ctx.fillStyle = '#dbe3f5';
       ctx.fillText(authorText, authX + 15, topY + 23);
 
-      // 3. Render Tier Rows (No voids, sleek card lanes)
       let curY = topY + headerH;
       const rw = W - pad * 2;
 
       for (const { row, rowHeight } of rowLayouts) {
-        const rx = pad;
-        const ry = curY;
-        const rh = rowHeight;
-
-        // Row background
+        const rx = pad, ry = curY, rh = rowHeight;
         const rowBg = ctx.createLinearGradient(rx, ry, rx + rw, ry);
         rowBg.addColorStop(0, 'rgba(20, 25, 38, 0.9)');
         rowBg.addColorStop(1, 'rgba(12, 15, 24, 0.95)');
@@ -852,14 +878,12 @@
         roundedRect(ctx, rx, ry, rw, rh, 14);
         ctx.stroke();
 
-        // Left Label Box
         const rowColor = row.color || '#ff4466';
         ctx.fillStyle = rowColor;
         roundedRect(ctx, rx, ry, labelW, rh, 14);
         ctx.fill();
         ctx.fillRect(rx + labelW - 14, ry, 14, rh);
 
-        // Label Text
         ctx.fillStyle = '#0a0d14';
         ctx.font = '950 22px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
@@ -870,7 +894,6 @@
         });
         ctx.textAlign = 'left';
 
-        // Items in this row
         const items = row.items || [];
         if (!items.length) {
           ctx.fillStyle = '#57637d';
@@ -884,21 +907,17 @@
             const ix = rx + labelW + rowPad + col * (cardW + cardGap);
             const iy = ry + rowPad + rIndex * (cardH + cardGap);
 
-            // Card shadow
             ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
             roundedRect(ctx, ix + 1, iy + 2, cardW, cardH, 9);
             ctx.fill();
 
-            // Card base
             ctx.fillStyle = '#161b29';
             roundedRect(ctx, ix, iy, cardW, cardH, 9);
             ctx.fill();
 
             if (item.poster) {
               try {
-                const fakeImg = new Image();
-                fakeImg.src = item.poster;
-                const loaded = await loadImageForExport(fakeImg);
+                const loaded = await loadImageForCanvas(item.poster);
                 ctx.save();
                 roundedRect(ctx, ix, iy, cardW, cardH, 9);
                 ctx.clip();
@@ -919,7 +938,6 @@
               }
             }
 
-            // Crisp card border
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
             ctx.lineWidth = 1;
             roundedRect(ctx, ix, iy, cardW, cardH, 9);
@@ -930,7 +948,6 @@
         curY += rh + rowGap;
       }
 
-      // 4. Footer Watermark
       ctx.font = '600 11px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#54607a';
       ctx.fillText(isActors ? 'CINEVA · Энциклопедия кино, актёров и система ранжирования' : 'CINEVA · Киноэнциклопедия и система ранжирования', pad, H - 24);
@@ -940,135 +957,110 @@
       ctx.fillText(new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }), W - pad, H - 24);
       ctx.textAlign = 'left';
 
-      const safeTitle = (byId('tierlistTitleInput').value.trim() || `cineva-tierlist-${activeTierKind}`).toLowerCase().replace(/[^a-zа-я0-9]/gi, '-');
+      const safeTitle = (byId('tierlistTitleInput')?.value.trim() || `cineva-tierlist-${activeTierKind}`).toLowerCase().replace(/[^a-zа-я0-9]/gi, '-');
       const link = document.createElement('a');
       link.download = `${safeTitle}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
       showToast('Тирлист успешно сохранён как PNG!', 'success');
     } catch (err) {
-      showToast('Ошибка экспорта PNG: ' + (err.message || err), 'error');
+      showToast('Ошибка экспорта PNG: ' + err.message, 'error');
     } finally {
       if (exportBtn) { exportBtn.disabled = false; exportBtn.textContent = '🎨 Скачать PNG'; }
     }
   }
 
-
-
-// ==========================================
-// TIER LIST PROJECT SHARING (VIA URL HASH)
-// ==========================================
-function encodeTierProject(obj) {
-  const json = JSON.stringify(obj);
-  return encodeURIComponent(btoa(unescape(encodeURIComponent(json))));
-}
-
-function decodeTierProject(str) {
-  const json = decodeURIComponent(escape(atob(decodeURIComponent(str))));
-  return JSON.parse(json);
-}
-
-function shareTierListProject() {
-  try {
-    const data = getActiveTierData();
-    const isActors = activeTierKind === 'actors';
-    const title = byId('tierlistTitleInput').value.trim() || data.title || (isActors ? 'Тирлист актёров' : 'Кинотирлист');
-    const author = byId('tierlistAuthorInput').value.trim() || data.author || (window.reviewerName || '') || 'Киноман CINEVA';
-
-    const payload = {
-      v: 1,
-      k: activeTierKind,
-      t: title,
-      a: author,
-      rows: (data.rows || []).map(r => ({
-        id: r.id,
-        l: r.label,
-        c: r.color,
-        items: (r.items || []).map(i => ({
+  // ==========================================
+  // SHARE TIERLIST
+  // ==========================================
+  function shareTierListProject() {
+    try {
+      const data = getActiveTierData();
+      const compactPayload = {
+        k: activeTierKind,
+        t: data.title || '',
+        a: data.author || '',
+        rows: data.rows.map(r => ({
+          id: r.id,
+          l: r.label,
+          c: r.color,
+          items: (r.items || []).map(i => ({
+            id: i.id,
+            title: i.title,
+            year: i.year || '',
+            poster: i.poster || '',
+            media_type: i.media_type || 'movie',
+            source: i.source || 'tmdb'
+          }))
+        })),
+        unranked: (data.unranked || []).slice(0, 15).map(i => ({
           id: i.id,
-          t: i.title || i.name || '',
-          y: i.year || i.role || '',
-          p: i.poster || '',
-          s: i.source || 'tmdb',
-          type: i.type || (activeTierKind === 'actors' ? 'person' : 'movie')
+          title: i.title,
+          year: i.year || '',
+          poster: i.poster || '',
+          media_type: i.media_type || 'movie',
+          source: i.source || 'tmdb'
         }))
-      })),
-      unranked: (data.unranked || []).map(i => ({
-        id: i.id,
-        t: i.title || i.name || '',
-        y: i.year || i.role || '',
-        p: i.poster || '',
-        s: i.source || 'tmdb',
-        type: i.type || (activeTierKind === 'actors' ? 'person' : 'movie')
-      }))
-    };
+      };
 
-    const encoded = encodeTierProject(payload);
-    const basePath = window.location.pathname.endsWith('.html') 
-      ? window.location.pathname 
-      : (window.location.pathname.replace(/\/?$/, '/tierlist.html'));
-    const shareUrl = `${window.location.origin}${basePath}#tier=${encoded}`;
+      const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(compactPayload))));
+      const shareUrl = `${window.location.origin}${window.location.pathname}#tier=${encodeURIComponent(b64)}`;
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        if (typeof window.showToast === 'function') window.showToast('🔗 Ссылка на тирлист скопирована в буфер обмена!', 'success');
-      }).catch(() => prompt('Скопируйте ссылку на тирлист:', shareUrl));
-    } else {
-      prompt('Скопируйте ссылку на тирлист:', shareUrl);
-    }
-  } catch (err) {
-    console.error('Failed to share tierlist:', err);
-  }
-}
-
-function checkSharedTierFromUrl() {
-  try {
-    const hash = window.location.hash || '';
-    const search = window.location.search || '';
-    let tierParam = null;
-    if (hash.includes('tier=')) {
-      tierParam = hash.split('tier=')[1].split('&')[0];
-    } else if (search.includes('tier=')) {
-      tierParam = new URLSearchParams(search).get('tier');
-    }
-    if (tierParam) {
-      const payload = decodeTierProject(tierParam);
-      if (payload && (payload.rows || payload.t)) {
-        const kind = payload.k || 'movies';
-        activeTierKind = kind;
-        tierStores[kind] = {
-          title: payload.t || (kind === 'actors' ? 'Тирлист актёров' : 'Кинотирлист'),
-          author: payload.a || '',
-          rows: (payload.rows || []).map(r => ({
-            id: r.id || ('row_' + Math.random().toString(36).substr(2, 6)),
-            label: r.l || 'Ряд',
-            color: r.c || '#ff5964',
-            items: r.items || []
-          })),
-          unranked: payload.unranked || []
-        };
-        saveTierListStorage();
-        updateTierModeUI();
-        renderTierBoard();
-        if (typeof window.showPage === 'function') window.showPage('tierlist');
-        if (typeof window.showToast === 'function') window.showToast(`⭐ Проект «${payload.t || 'Тирлист'}» успешно загружен по ссылке!`, 'success');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          showToast('🔗 Ссылка на тирлист скопирована в буфер обмена!', 'success');
+        }).catch(() => prompt('Скопируйте ссылку на тирлист:', shareUrl));
+      } else {
+        prompt('Скопируйте ссылку на тирлист:', shareUrl);
       }
+    } catch (err) {
+      showToast('Ошибка при формировании ссылки: ' + err.message, 'error');
     }
-  } catch (e) {
-    console.warn('Could not parse shared tierlist URL:', e);
   }
-}
 
-document.addEventListener('click', e => {
-  const btn = e.target.closest('#tierShareBtn');
-  if (btn) { e.preventDefault(); shareTierListProject(); }
-});
-window.addEventListener('hashchange', checkSharedTierFromUrl);
+  function checkSharedTierFromUrl() {
+    try {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      let tierParam = null;
+      if (hash.includes('tier=')) {
+        tierParam = hash.split('tier=')[1].split('&')[0];
+      } else if (search.includes('tier=')) {
+        tierParam = new URLSearchParams(search).get('tier');
+      }
 
-// Expose on window for app.js
-window.renderTierBoard = renderTierBoard;
-window.checkSharedTierFromUrl = checkSharedTierFromUrl;
-window.saveTierListStorage = saveTierListStorage;
-window.loadTierListStorage = loadTierListStorage;
+      if (tierParam) {
+        const payload = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(tierParam)))));
+        if (payload && (payload.rows || payload.t)) {
+          const kind = payload.k || 'movies';
+          activeTierKind = kind;
+          tierStores[kind] = {
+            title: payload.t || (kind === 'actors' ? 'Тирлист актёров' : 'Кинотирлист'),
+            author: payload.a || '',
+            rows: (payload.rows || []).map(r => ({
+              id: r.id || ('row_' + Math.random().toString(36).substr(2, 6)),
+              label: r.l || r.label || 'Ряд',
+              color: r.c || r.color || '#ff5964',
+              items: r.items || []
+            })),
+            unranked: payload.unranked || []
+          };
+          saveTierListStorage();
+          updateTierModeUI();
+          renderTierBoard();
+          showToast(`⭐ Проект «${payload.t || 'Тирлист'}» успешно загружен по ссылке!`, 'success');
+        }
+      }
+    } catch (_) {}
+  }
 
+  // Startup
+  loadTierListStorage();
+  renderTierBoard();
+  checkSharedTierFromUrl();
+  window.addEventListener('hashchange', checkSharedTierFromUrl);
+
+  window.renderTierBoard = renderTierBoard;
+  window.exportTierListPng = exportTierListPng;
+  window.shareTierListProject = shareTierListProject;
 })();

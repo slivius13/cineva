@@ -31,9 +31,9 @@
 
 <div class="site-shell">
   <div class="site-topbar">
-    <button class="site-logo" type="button" class="active" data-page-link="home" aria-label="CINEVA — главная">
+    <a href="index.html" class="site-logo" aria-label="CINEVA — главная">
       <span class="site-logo-mark">C</span><span class="site-logo-word">CINEVA<small>CINEMA INDEX</small></span>
-    </button>
+    </a>
     <form class="global-search" id="globalSearchForm" role="search">
       <span class="search-symbol" aria-hidden="true">⌕</span>
       <input id="globalSearchInput" type="search" maxlength="120" placeholder="Фильм, сериал, актёр, режиссёр…" autocomplete="off" aria-label="Поиск фильма, сериала или человека">
@@ -46,17 +46,16 @@
     </div>
   </div>
   <nav class="site-nav" aria-label="Основная навигация">
-    <a href="index.html" class="nav-link" data-page-link="home">Обзор</a>
-    <a href="search.html" class="nav-link" data-page-link="search">Каталог и поиск</a>
-    <a href="rating.html" class="nav-link active" data-page-link="rating">Оценка CINEVA</a>
-    <a href="tierlist.html" class="nav-link" id="navTierlistBtn" data-page-link="tierlist">Тирлисты</a>
-    <a href="watchlist.html" class="nav-link" id="navWatchlistBtn" data-page-link="watchlist">Избранное (<span id="watchlistCount">0</span>)</a>
+    <a href="index.html" class="nav-link">Обзор</a>
+    <a href="search.html" class="nav-link">Каталог и поиск</a>
+    <a href="rating.html" class="nav-link active">Оценка CINEVA</a>
+    <a href="tierlist.html" class="nav-link" id="navTierlistBtn">Тирлисты</a>
+    <a href="watchlist.html" class="nav-link" id="navWatchlistBtn">Избранное (<span id="watchlistCount">0</span>)</a>
   </nav>
 </div>
 
-
 <section id="page-rating" class="site-page rating-page active">
-<div class="reviewer-overlay" id="reviewerOverlay" role="dialog" aria-modal="true" aria-labelledby="reviewerHeading">
+<div class="reviewer-overlay" id="reviewerOverlay" role="dialog" aria-modal="true" aria-labelledby="reviewerHeading" hidden>
  <div class="reviewer-box"><h2 id="reviewerHeading">Кто рецензирует?</h2><p>Имя будет указано внизу экспортированной карточки рядом с датой.</p><input id="reviewerNameInput" type="text" maxlength="40" placeholder="Имя или псевдоним" autocomplete="name"><button class="primary" id="reviewerSave" type="button">Продолжить</button></div>
 </div>
 <div class="app">
@@ -266,14 +265,38 @@
   </div>
 </main>
 
+<div class="settings-overlay" id="settingsOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="settingsHeading">
+  <div class="settings-card">
+    <h2 id="settingsHeading">Настройки API</h2>
+    <p>Укажи ключи источников, которые нужно подключить. Если оставить поле пустым, этот источник будет отключён; оба поля можно оставить пустыми и пользоваться ручным вводом.</p>
+    <div class="setting-field">
+      <label for="settingTmdbKey">API-ключ TMDB (v3 auth token / key)</label>
+      <input id="settingTmdbKey" type="text" placeholder="TMDB API v3 Key">
+    </div>
+    <div class="setting-field">
+      <label for="settingKpKey">API-ключ Кинопоиска (kinopoiskapiunofficial)</label>
+      <input id="settingKpKey" type="text" placeholder="Kinopoisk Unofficial API Key">
+    </div>
+    <div class="settings-warning">Ключи сохраняются локально в вашем браузере (LocalStorage).</div>
+    <div class="api-check-panel">
+      <div class="api-check-title">Состояние источников</div>
+      <div id="apiCheckStatus" class="api-check-status" role="status" aria-live="polite">Проверь подключение, чтобы узнать, отвечают ли TMDB и Кинопоиск в этом браузере.</div>
+      <button class="site-btn" id="checkApiBtn" type="button">Проверить подключение</button>
+    </div>
+    <div class="settings-actions">
+      <button class="site-btn" id="settingsResetDefault" type="button">Удалить сохранённые ключи</button>
+      <button class="site-btn" id="settingsCloseBtn" type="button">Закрыть</button>
+      <button class="site-btn primary" id="settingsSaveBtn" type="button">Сохранить</button>
+    </div>
+  </div>
+</div>
 
 <footer class="site-footer">CINEVA — независимый проект о кино. Данные карточек, рейтинги и изображения загружаются через API Кинопоиска и TMDB. CINEVA не связан с Кинопоиском или TMDB. Для публичного запуска перенеси ключ API на сервер.</footer>
 
 <div class="toast-container" id="toastContainer"></div>
 <button class="scroll-top" id="scrollTopBtn" type="button" title="Наверх" aria-label="Прокрутить наверх">↑</button>
 
-<script src="js/rating.js"></script>
-<script src="js/tierlist.js"></script>
 <script src="js/app.js"></script>
+<script src="js/rating.js"></script>
 </body>
 </html>

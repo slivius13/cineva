@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CINEVA — Киноэнциклопедия и Коллекции</title>
+<title>CINEVA — Главная киноэнциклопедия</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-page="home">
@@ -31,9 +31,9 @@
 
 <div class="site-shell">
   <div class="site-topbar">
-    <button class="site-logo" type="button" class="active" data-page-link="home" aria-label="CINEVA — главная">
+    <a href="index.html" class="site-logo" aria-label="CINEVA — главная">
       <span class="site-logo-mark">C</span><span class="site-logo-word">CINEVA<small>CINEMA INDEX</small></span>
-    </button>
+    </a>
     <form class="global-search" id="globalSearchForm" role="search">
       <span class="search-symbol" aria-hidden="true">⌕</span>
       <input id="globalSearchInput" type="search" maxlength="120" placeholder="Фильм, сериал, актёр, режиссёр…" autocomplete="off" aria-label="Поиск фильма, сериала или человека">
@@ -46,14 +46,13 @@
     </div>
   </div>
   <nav class="site-nav" aria-label="Основная навигация">
-    <a href="index.html" class="nav-link active" data-page-link="home">Обзор</a>
-    <a href="search.html" class="nav-link" data-page-link="search">Каталог и поиск</a>
-    <a href="rating.html" class="nav-link" data-page-link="rating">Оценка CINEVA</a>
-    <a href="tierlist.html" class="nav-link" id="navTierlistBtn" data-page-link="tierlist">Тирлисты</a>
-    <a href="watchlist.html" class="nav-link" id="navWatchlistBtn" data-page-link="watchlist">Избранное (<span id="watchlistCount">0</span>)</a>
+    <a href="index.html" class="nav-link active">Обзор</a>
+    <a href="search.html" class="nav-link">Каталог и поиск</a>
+    <a href="rating.html" class="nav-link">Оценка CINEVA</a>
+    <a href="tierlist.html" class="nav-link" id="navTierlistBtn">Тирлисты</a>
+    <a href="watchlist.html" class="nav-link" id="navWatchlistBtn">Избранное (<span id="watchlistCount">0</span>)</a>
   </nav>
 </div>
-
 
 <main id="page-home" class="site-page active">
   <div class="site-container">
@@ -63,9 +62,9 @@
         <h1>Всё кино.<br><span>В одной истории.</span></h1>
         <p>Исследуй фильмы и сериалы, открывай актёрский состав и съёмочную группу, изучай доступные профили и оценивай произведения по авторской системе CINEVA.</p>
         <div class="hero-actions">
-          <button class="site-btn primary" data-go-search type="button">Исследовать кино ↗</button>
+          <a href="search.html" class="site-btn primary" style="text-decoration:none" data-go-search>Исследовать кино ↗</a>
           <button class="site-btn" id="heroRandomBtn" type="button">🎲 Мне повезёт!</button>
-          <button class="site-btn" data-page-link="rating" type="button">Моя оценка</button>
+          <a href="rating.html" class="site-btn" style="text-decoration:none">Моя оценка</a>
         </div>
       </div>
       <aside class="hero-art" aria-label="Данные CINEVA">
@@ -78,12 +77,11 @@
         <div class="hero-art-card"><div class="eyebrow">CINEVA INDEX</div><strong>Одна карточка. Два рейтинга. Своя оценка.</strong><p>Сравнивай оценки баз, изучай людей за кадром и формируй собственный взгляд на кино.</p><div class="hero-feature-pills"><span>Фильмы</span><span>Сериалы</span><span>Персоны</span><span>Фильмографии</span></div></div>
       </aside>
     </section>
-    <section class="shelf-section"><div class="section-head"><div><h2>Фильмы, которые обсуждают</h2><p>Популярные полнометражные истории</p></div><button class="text-link" data-page-link="search" type="button">Искать фильмы ↗</button></div><div class="media-row" id="homeMovies"></div></section>
-    <section class="shelf-section"><div class="section-head"><div><h2>Сериалы</h2><p>Мир историй, которые продолжаются</p></div><button class="text-link" data-page-link="search" type="button">Весь каталог ↗</button></div><div class="media-row" id="homeTv"></div></section>
-    <section class="shelf-section"><div class="section-head"><div><h2>Популярные люди кино</h2><p>Актёры, режиссёры и создатели</p></div><button class="text-link" data-page-link="search" type="button">Искать людей ↗</button></div><div class="media-row" id="homePeople"></div></section>
+    <section class="shelf-section"><div class="section-head"><div><h2>Фильмы, которые обсуждают</h2><p>Популярные полнометражные истории</p></div><a href="search.html?mode=movie" class="text-link" style="text-decoration:none">Искать фильмы ↗</a></div><div class="media-row" id="homeMovies"></div></section>
+    <section class="shelf-section"><div class="section-head"><div><h2>Сериалы</h2><p>Мир историй, которые продолжаются</p></div><a href="search.html?mode=tv" class="text-link" style="text-decoration:none">Весь каталог ↗</a></div><div class="media-row" id="homeTv"></div></section>
+    <section class="shelf-section"><div class="section-head"><div><h2>Популярные люди кино</h2><p>Актёры, режиссёры и создатели</p></div><a href="search.html?mode=person" class="text-link" style="text-decoration:none">Искать людей ↗</a></div><div class="media-row" id="homePeople"></div></section>
   </div>
 </main>
-
 
 <main id="page-detail" class="site-page" style="display:none">
   <div class="site-container">
@@ -92,14 +90,37 @@
   </div>
 </main>
 
+<div class="settings-overlay" id="settingsOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="settingsHeading">
+  <div class="settings-card">
+    <h2 id="settingsHeading">Настройки API</h2>
+    <p>Укажи ключи источников, которые нужно подключить. Если оставить поле пустым, этот источник будет отключён; оба поля можно оставить пустыми и пользоваться ручным вводом.</p>
+    <div class="setting-field">
+      <label for="settingTmdbKey">API-ключ TMDB (v3 auth token / key)</label>
+      <input id="settingTmdbKey" type="text" placeholder="TMDB API v3 Key">
+    </div>
+    <div class="setting-field">
+      <label for="settingKpKey">API-ключ Кинопоиска (kinopoiskapiunofficial)</label>
+      <input id="settingKpKey" type="text" placeholder="Kinopoisk Unofficial API Key">
+    </div>
+    <div class="settings-warning">Ключи сохраняются локально в вашем браузере (LocalStorage).</div>
+    <div class="api-check-panel">
+      <div class="api-check-title">Состояние источников</div>
+      <div id="apiCheckStatus" class="api-check-status" role="status" aria-live="polite">Проверь подключение, чтобы узнать, отвечают ли TMDB и Кинопоиск в этом браузере.</div>
+      <button class="site-btn" id="checkApiBtn" type="button">Проверить подключение</button>
+    </div>
+    <div class="settings-actions">
+      <button class="site-btn" id="settingsResetDefault" type="button">Удалить сохранённые ключи</button>
+      <button class="site-btn" id="settingsCloseBtn" type="button">Закрыть</button>
+      <button class="site-btn primary" id="settingsSaveBtn" type="button">Сохранить</button>
+    </div>
+  </div>
+</div>
 
 <footer class="site-footer">CINEVA — независимый проект о кино. Данные карточек, рейтинги и изображения загружаются через API Кинопоиска и TMDB. CINEVA не связан с Кинопоиском или TMDB. Для публичного запуска перенеси ключ API на сервер.</footer>
 
 <div class="toast-container" id="toastContainer"></div>
 <button class="scroll-top" id="scrollTopBtn" type="button" title="Наверх" aria-label="Прокрутить наверх">↑</button>
 
-<script src="js/rating.js"></script>
-<script src="js/tierlist.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
