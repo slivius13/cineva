@@ -399,7 +399,9 @@
     }
 
     if (!window.getTmdbKey() && !window.getKpKey()) {
-      if (byId('tmdbStatus')) byId('tmdbStatus').textContent = 'Источники отключены. Нажмите «Перейти к ручному вводу», чтобы оценить фильм без API.';
+      if (byId('tmdbStatus')) {
+        byId('tmdbStatus').innerHTML = 'Источники отключены. <button type="button" class="site-btn primary" data-open-settings style="display:inline-block;padding:4px 10px;font-size:11px;margin-left:6px">🔑 Ввести API ключи</button> или нажмите кнопку ниже для ручного ввода.';
+      }
       if (byId('tmdbResults')) byId('tmdbResults').replaceChildren();
       tmdbSearchResults = [];
       return;

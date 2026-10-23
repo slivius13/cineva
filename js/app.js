@@ -26,50 +26,131 @@
   let lastSearchItems = [];
   let currentDetail = null;
   let searchCounter = 0;
-  let previousView = null; // remembers previous state before opening detail view
+  let previousView = null;
 
   // In-memory cache for search queries
   const searchCache = new Map();
 
   // ==========================================
-  // API KEYS STORAGE & VALIDATION
+  // MULTI-LAYER STORAGE ADAPTER
+  // (localStorage + sessionStorage + window.name + memory)
+  // Ensures 100% persistence on file:/// in all browsers (Chrome, Firefox, Edge, Safari)
   // ==========================================
-  const KINOPOISK_BASE = 'https://kinopoiskapiunofficial.tech/api';
-  let tmdbKeyMemory = '';
-  let kpKeyMemory = '';
-  let apiSetupCompleteMemory = false;
+  const inMemoryStore = {};
 
-  function readApiKey(storageKey, memoryValue) {
+  function getStoredValue(key) {
+    // 1. Check in-memory store
+    if (inMemoryStore[key]) return inMemoryStore[key];
+
+    // 2. Check localStorage
     try {
-      const value = localStorage.getItem(storageKey);
-      if (value !== null) return value.trim();
+      const v = localStorage.getItem(key);
+      if (v !== null && v !== undefined && v !== '') {
+        const val = String(v).trim();
+        inMemoryStore[key] = val;
+        return val;
+      }
     } catch (_) {}
-    return String(memoryValue || '').trim();
+
+    // 3. Check sessionStorage
+    try {
+      const v = sessionStorage.getItem(key);
+      if (v !== null && v !== undefined && v !== '') {
+        const val = String(v).trim();
+        inMemoryStore[key] = val;
+        return val;
+      }
+    } catch (_) {}
+
+    // 4. Check window.name (guaranteed cross-page persistence on file:/// across all origins in same tab)
+    try {
+      if (window.name && window.name.startsWith('{') && window.name.endsWith('}')) {
+        const parsed = JSON.parse(window.name);
+        if (parsed && parsed[key] !== undefined && parsed[key] !== '') {
+          const val = String(parsed[key]).trim();
+          inMemoryStore[key] = val;
+          return val;
+        }
+      }
+    } catch (_) {}
+
+    return '';
   }
 
-  function getTmdbKey() { return readApiKey('cineva_tmdb_key', tmdbKeyMemory); }
-  function getKpKey() { return readApiKey('cineva_kp_key', kpKeyMemory); }
+  function setStoredValue(key, value) {
+    const str = String(value || '').trim();
+    if (str) inMemoryStore[key] = str;
+    else delete inMemoryStore[key];
+
+    // 1. localStorage
+    try {
+      if (str) localStorage.setItem(key, str);
+      else localStorage.removeItem(key);
+    } catch (_) {}
+
+    // 2. sessionStorage
+    try {
+      if (str) sessionStorage.setItem(key, str);
+      else sessionStorage.removeItem(key);
+    } catch (_) {}
+
+    // 3. window.name (JSON bundle for tab persistence)
+    try {
+      let store = {};
+      if (window.name && window.name.startsWith('{') && window.name.endsWith('}')) {
+        try { store = JSON.parse(window.name); } catch (_) {}
+      }
+      if (str) store[key] = str;
+      else delete store[key];
+      window.name = JSON.stringify(store);
+    } catch (_) {}
+  }
+
+  // API KEYS MANAGEMENT
+  const KINOPOISK_BASE = 'https://kinopoiskapiunofficial.tech/api';
+
+  function getTmdbKey() {
+    return getStoredValue('cineva_tmdb_key');
+  }
+
+  function getKpKey() {
+    return getStoredValue('cineva_kp_key');
+  }
 
   function isApiSetupComplete() {
-    try {
-      if (localStorage.getItem('cineva_api_setup_complete') === 'true') return true;
-    } catch (_) {}
-    return apiSetupCompleteMemory;
+    return getStoredValue('cineva_api_setup_complete') === 'true';
   }
 
   function saveApiKeys(tmdbValue, kpValue) {
-    tmdbKeyMemory = String(tmdbValue || '').trim();
-    kpKeyMemory = String(kpValue || '').trim();
-    apiSetupCompleteMemory = true;
+    const cleanTmdb = String(tmdbValue || '').trim().replace(/^["']|["']$/g, '');
+    const cleanKp = String(kpValue || '').trim().replace(/^["']|["']$/g, '');
+
+    setStoredValue('cineva_tmdb_key', cleanTmdb);
+    setStoredValue('cineva_kp_key', cleanKp);
+    setStoredValue('cineva_api_setup_complete', 'true');
+
+    updateApiStatusBadges();
+
+    // Notify other components/tabs
     try {
-      if (tmdbKeyMemory) localStorage.setItem('cineva_tmdb_key', tmdbKeyMemory);
-      else localStorage.removeItem('cineva_tmdb_key');
-
-      if (kpKeyMemory) localStorage.setItem('cineva_kp_key', kpKeyMemory);
-      else localStorage.removeItem('cineva_kp_key');
-
-      localStorage.setItem('cineva_api_setup_complete', 'true');
+      window.dispatchEvent(new CustomEvent('cineva-keys-updated', { detail: { tmdb: cleanTmdb, kp: cleanKp } }));
     } catch (_) {}
+  }
+
+  function updateApiStatusBadges() {
+    const tmdb = getTmdbKey();
+    const kp = getKpKey();
+    const settingsBtn = byId('settingsBtn');
+    if (settingsBtn) {
+      if (tmdb || kp) {
+        settingsBtn.title = 'Настройки API (источники подключены)';
+        settingsBtn.innerHTML = '⚙️ Настройки API';
+        settingsBtn.classList.remove('primary');
+      } else {
+        settingsBtn.title = 'Настройки API (источники не подключены)';
+        settingsBtn.innerHTML = '⚙️ Ключи API';
+      }
+    }
   }
 
   // ==========================================
@@ -99,32 +180,22 @@
   // ==========================================
   // WATCHLIST STORAGE & UI
   // ==========================================
-  let watchlistMemory = null;
-  let watchlistMemoryOnly = false;
-
   function getWatchlist() {
-    if (watchlistMemoryOnly && Array.isArray(watchlistMemory)) return watchlistMemory;
-    try {
-      const parsed = JSON.parse(localStorage.getItem('cineva_watchlist') || '[]');
-      watchlistMemory = Array.isArray(parsed) ? parsed : [];
-      return watchlistMemory;
-    } catch (_) {
-      return Array.isArray(watchlistMemory) ? watchlistMemory : [];
+    const raw = getStoredValue('cineva_watchlist');
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (_) {}
     }
+    return [];
   }
 
   function saveWatchlist(list) {
-    watchlistMemory = Array.isArray(list) ? list : [];
-    let persistent = true;
-    try {
-      localStorage.setItem('cineva_watchlist', JSON.stringify(watchlistMemory));
-      watchlistMemoryOnly = false;
-    } catch (_) {
-      persistent = false;
-      watchlistMemoryOnly = true;
-    }
+    const arr = Array.isArray(list) ? list : [];
+    setStoredValue('cineva_watchlist', JSON.stringify(arr));
     updateWatchlistCount();
-    return persistent;
+    return true;
   }
 
   function sourceOf(item) { return item.source || 'tmdb'; }
@@ -166,11 +237,7 @@
       notice = `«${title}» добавлено в избранное`;
     }
 
-    const persistent = saveWatchlist(list);
-    if (!persistent) {
-      notice += '. В этом браузере список сохранён только до закрытия страницы';
-      noticeType = 'error';
-    }
+    saveWatchlist(list);
     showToast(notice, noticeType);
     if (currentPageKey === 'watchlist') updateWatchlistUI();
 
@@ -242,8 +309,8 @@
     }
   }
 
-  async function tmdbFetch(path, signal, timeoutMs = 10000) {
-    const key = getTmdbKey();
+  async function tmdbFetch(path, signal, timeoutMs = 10000, keyOverride = null) {
+    const key = (keyOverride || getTmdbKey()).trim();
     if (!key) throw new Error('Ключ TMDB не задан.');
     const headers = { accept: 'application/json' };
     let url = 'https://api.themoviedb.org/3' + path;
@@ -252,9 +319,9 @@
     return fetchJsonWithTimeout(url, { headers, signal }, timeoutMs);
   }
 
-  async function kpFetch(path, signal, timeoutMs = 10000) {
-    const key = getKpKey();
-    if (!key) throw new Error('Ключ Кинопоиска не задан в настройках.');
+  async function kpFetch(path, signal, timeoutMs = 10000, keyOverride = null) {
+    const key = (keyOverride || getKpKey()).trim();
+    if (!key) throw new Error('Ключ Кинопоиска не задан.');
     return fetchJsonWithTimeout(KINOPOISK_BASE + path, {
       headers: { 'X-API-KEY': key, 'Accept': 'application/json' },
       signal
@@ -384,7 +451,7 @@
     { term: 'леонардо ди каприо', match: ['леонардо дикаприо', 'дикаприо', 'декаприо', 'dicaprio'] },
     { term: 'стивен спилберг', match: ['спилберг', 'spielberg'] },
     { term: 'дэвид финчер', match: ['давид финчер', 'финчер', 'fincher'] },
-    { term: 'гарри поттер', match: ['гарри потер', 'гари потер', 'гари поттер', 'harry potter'] },
+    { term: 'гарри поттер', match: ['гарри потер', 'гари потер', 'гарри поттер', 'harry potter'] },
     { term: 'человек паук', match: ['человек-паук', 'человек павук', 'спайдермен', 'spiderman'] },
     { term: 'мстители', match: ['мститили', 'avengers'] },
     { term: 'зеленая миля', match: ['зелёная миля', 'зеленая мила', 'green mile'] },
@@ -583,7 +650,15 @@
     const target = byId(id);
     if (!target) return;
     if (!items || !items.length) {
-      target.innerHTML = `<div class="notice-card" style="grid-column:1/-1"><strong>Пока нет данных</strong>Не получилось загрузить подборку. Попробуй поиск.</div>`;
+      target.innerHTML = `
+        <div class="notice-card" style="grid-column:1/-1">
+          <strong>Пока нет данных</strong>
+          Не получилось загрузить подборку. Попробуйте поиск или проверьте ключи API.
+          <div style="margin-top:10px">
+            <button class="site-btn primary" type="button" data-open-settings>🔑 Настроить ключи API</button>
+          </div>
+        </div>
+      `;
       return;
     }
     target.innerHTML = items.slice(0, 6).map(item => posterCard({ ...item, media_type: item.media_type || type }, type)).join('');
@@ -599,7 +674,16 @@
         const el = byId(id);
         if (!el) return;
         el.dataset.loaded = 'true';
-        el.innerHTML = '<div class="notice-card" style="grid-column:1/-1"><strong>Источники не подключены</strong>Каталог требует хотя бы один API-ключ. Раздел оценки уже доступен в режиме ручного ввода. Добавить ключ можно через настройки ⚙️.</div>';
+        el.innerHTML = `
+          <div class="notice-card" style="grid-column:1/-1">
+            <strong>Источники не подключены</strong>
+            Для загрузки каталога и поиска подключите API-ключ TMDB или Кинопоиска (или оба). Оценивание также доступно в ручном режиме.
+            <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+              <button class="site-btn primary" type="button" data-open-settings>🔑 Ввести API-ключи</button>
+              <a href="rating.html" class="site-btn" style="text-decoration:none">Оценить фильм вручную</a>
+            </div>
+          </div>
+        `;
       });
       return;
     }
@@ -742,7 +826,6 @@
     activeSearchMode = mode;
     lastSearchQuery = query;
 
-    // If on a page other than search.html, route to search.html with parameters
     if (currentPageKey !== 'search') {
       window.location.href = `search.html?q=${encodeURIComponent(query)}&mode=${encodeURIComponent(mode)}`;
       return;
@@ -758,13 +841,28 @@
       return;
     }
 
+    if (!getTmdbKey() && !getKpKey()) {
+      if (byId('searchStatus')) byId('searchStatus').textContent = 'Источники отключены.';
+      if (byId('searchResults')) {
+        byId('searchResults').innerHTML = `
+          <div class="notice-card" style="grid-column:1/-1">
+            <strong>API-ключи не найдены</strong>
+            Для поиска по каталогу необходимо подключить TMDB или Кинопоиск.
+            <div style="margin-top:12px">
+              <button class="site-btn primary" type="button" data-open-settings>🔑 Настроить ключи API</button>
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
+
     const token = ++searchCounter;
     renderSkeletons('searchResults', 10);
     if (byId('searchStatus')) {
       byId('searchStatus').textContent = mode === 'person' ? 'Ищем людей в TMDB…' : 'Ищем в TMDB и Кинопоиске…';
     }
 
-    // Update URL history for shareability
     try {
       const u = new URL(window.location.href);
       u.searchParams.set('q', query);
@@ -801,7 +899,6 @@
     const detailEl = byId('page-detail');
     if (!detailEl) return false;
 
-    // Hide main active page section to reveal detail
     const mainSection = document.querySelector('.site-page:not(#page-detail)');
     if (mainSection && mainSection.style.display !== 'none') {
       previousView = mainSection;
@@ -822,7 +919,6 @@
       const mainSection = document.querySelector('.site-page:not(#page-detail)');
       if (mainSection) mainSection.style.display = 'block';
     }
-    // Remove open parameter from URL
     try {
       const u = new URL(window.location.href);
       u.searchParams.delete('open');
@@ -833,7 +929,6 @@
   }
 
   async function openTitle(id, type = 'movie') {
-    // If current page has no detail section, navigate to search.html with deep link
     if (!byId('page-detail')) {
       window.location.href = `search.html?open=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
       return;
@@ -842,7 +937,6 @@
     showDetailContainer();
     byId('detailContent').innerHTML = '<div class="notice-card"><strong>Загружаем карточку…</strong>Собираем описание, рейтинги и съёмочную группу.</div>';
 
-    // Update URL query string
     try {
       const u = new URL(window.location.href);
       u.searchParams.set('open', type);
@@ -1063,7 +1157,10 @@
   function openApiWelcomeIfNeeded() {
     const overlay = byId('apiWelcomeOverlay');
     if (!overlay) return true;
-    if (isApiSetupComplete()) { overlay.hidden = true; return true; }
+    if (isApiSetupComplete()) {
+      overlay.hidden = true;
+      return true;
+    }
     if (byId('welcomeTmdbKey')) byId('welcomeTmdbKey').value = getTmdbKey();
     if (byId('welcomeKpKey')) byId('welcomeKpKey').value = getKpKey();
     overlay.hidden = false;
@@ -1087,6 +1184,7 @@
     if (byId('settingTmdbKey')) byId('settingTmdbKey').value = getTmdbKey();
     if (byId('settingKpKey')) byId('settingKpKey').value = getKpKey();
     modal.hidden = false;
+    setTimeout(() => byId('settingTmdbKey')?.focus(), 50);
   }
 
   function hideSettings() {
@@ -1144,30 +1242,50 @@
       showToast('Сохранённые API-ключи удалены. Оценивание доступно вручную.', 'info');
       return;
     }
+
+    // Check API button: tests the inputs currently typed into modal!
     if (event.target.closest('#checkApiBtn')) {
       const btn = byId('checkApiBtn');
       const status = byId('apiCheckStatus');
+      const currentTmdb = (byId('settingTmdbKey')?.value || '').trim().replace(/^["']|["']$/g, '');
+      const currentKp = (byId('settingKpKey')?.value || '').trim().replace(/^["']|["']$/g, '');
+
       btn.disabled = true;
       btn.textContent = 'Проверяем…';
-      status.textContent = 'Запрос к TMDB и Кинопоиску выполняется отдельно для каждого источника.';
-      Promise.allSettled([
-        tmdbFetch('/configuration', undefined, 8000),
-        kpFetch('/v2.2/films/collections?type=TOP_POPULAR_MOVIES&page=1', undefined, 8000)
-      ]).then(results => {
+      status.textContent = 'Тестируем введённые ключи...';
+
+      const tmdbCheck = currentTmdb
+        ? tmdbFetch('/configuration', undefined, 8000, currentTmdb)
+        : Promise.reject(new Error('Ключ TMDB не введён'));
+
+      const kpCheck = currentKp
+        ? kpFetch('/v2.2/films/collections?type=TOP_POPULAR_MOVIES&page=1', undefined, 8000, currentKp)
+        : Promise.reject(new Error('Ключ Кинопоиска не введён'));
+
+      Promise.allSettled([tmdbCheck, kpCheck]).then(results => {
         const labels = ['TMDB', 'Кинопоиск'];
-        status.innerHTML = results.map((result, index) => result.status === 'fulfilled'
-          ? `<span class="api-ok">✓ ${labels[index]}: подключение работает</span>`
-          : `<span class="api-fail">✕ ${labels[index]}: ${safe(result.reason?.message || 'нет ответа API')}</span>`).join('\n');
-      }).finally(() => { btn.disabled = false; btn.textContent = 'Проверить подключение'; });
+        status.innerHTML = results.map((result, index) => {
+          if (result.status === 'fulfilled') {
+            return `<span class="api-ok">✓ ${labels[index]}: подключение работает</span>`;
+          } else {
+            return `<span class="api-fail">✕ ${labels[index]}: ${safe(result.reason?.message || 'ошибка запроса')}</span>`;
+          }
+        }).join('\n');
+      }).finally(() => {
+        btn.disabled = false;
+        btn.textContent = 'Проверить подключение';
+      });
       return;
     }
+
+    // Save API keys button
     if (event.target.closest('#settingsSaveBtn')) {
       const tmdbVal = byId('settingTmdbKey')?.value.trim() || '';
       const kpVal = byId('settingKpKey')?.value.trim() || '';
       saveApiKeys(tmdbVal, kpVal);
       hideSettings();
       if (currentPageKey === 'home') loadHomeShelves(true);
-      showToast(tmdbVal || kpVal ? 'Настройки API сохранены.' : 'API отключены. Оценивание доступно вручную.', 'success');
+      showToast(tmdbVal || kpVal ? 'Настройки API сохранены!' : 'API отключены. Оценивание доступно вручную.', 'success');
       return;
     }
 
@@ -1247,7 +1365,6 @@
         sessionStorage.setItem('cineva_rate_item', JSON.stringify(ratePayload));
       } catch (_) {}
 
-      // If already on rating page, fill form directly
       if (currentPageKey === 'rating' && typeof window.loadRatingItem === 'function') {
         window.loadRatingItem(ratePayload);
       } else {
@@ -1380,9 +1497,23 @@
     }
   });
 
-  // Sync Watchlist badge across multiple browser tabs
+  // Support pressing Enter in settings inputs to save immediately
+  ['settingTmdbKey', 'settingKpKey'].forEach(id => {
+    byId(id)?.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        byId('settingsSaveBtn')?.click();
+      }
+    });
+  });
+
+  // Sync Watchlist badge & keys across multiple browser tabs
   window.addEventListener('storage', event => {
     if (event.key === 'cineva_watchlist') updateWatchlistCount();
+    if (event.key === 'cineva_tmdb_key' || event.key === 'cineva_kp_key') {
+      updateApiStatusBadges();
+      if (currentPageKey === 'home') loadHomeShelves(true);
+    }
   });
 
   // First-run welcome modal hooks
@@ -1396,6 +1527,7 @@
   // PAGE INITIALIZATION RUNNER
   // ==========================================
   updateWatchlistCount();
+  updateApiStatusBadges();
 
   if (currentPageKey === 'home') {
     if (openApiWelcomeIfNeeded()) loadHomeShelves();
@@ -1416,7 +1548,7 @@
     posterUrl, ratingText, releaseYear, safe,
     openTitle, openPerson, openKinopoiskTitle,
     getWatchlist, saveWatchlist, isInWatchlist, toggleWatchlist,
-    pickRandomMovie, runGlobalSearch
+    pickRandomMovie, runGlobalSearch, showSettings, hideSettings
   };
 
   window.showToast = showToast;
@@ -1434,4 +1566,6 @@
   window.posterUrl = posterUrl;
   window.releaseYear = releaseYear;
   window.safe = safe;
+  window.showSettings = showSettings;
+  window.hideSettings = hideSettings;
 })();
