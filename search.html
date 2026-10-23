@@ -6,7 +6,7 @@
 <title>Каталог и поиск фильмов — CINEVA</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body data-default-page="search">
+<body data-page="search">
 
 <div class="api-welcome-overlay" id="apiWelcomeOverlay" role="dialog" aria-modal="true" aria-labelledby="apiWelcomeHeading" hidden>
   <div class="api-welcome-card">
@@ -31,7 +31,7 @@
 
 <div class="site-shell">
   <div class="site-topbar">
-    <button class="site-logo" type="button" data-page-link="home" aria-label="CINEVA — главная">
+    <button class="site-logo" type="button" class="active" data-page-link="home" aria-label="CINEVA — главная">
       <span class="site-logo-mark">C</span><span class="site-logo-word">CINEVA<small>CINEMA INDEX</small></span>
     </button>
     <form class="global-search" id="globalSearchForm" role="search">
@@ -46,42 +46,14 @@
     </div>
   </div>
   <nav class="site-nav" aria-label="Основная навигация">
-    <button  type="button" data-page-link="home">Обзор</button>
-    <button type="button" class="active" data-page-link="search">Каталог и поиск</button>
-    <button type="button" data-page-link="rating">Оценка CINEVA</button>
-    <button type="button" data-page-link="tierlist" id="navTierlistBtn">Тирлисты</button>
-    <button type="button" data-page-link="watchlist" id="navWatchlistBtn">Избранное (<span id="watchlistCount">0</span>)</button>
+    <a href="index.html" class="nav-link" data-page-link="home">Обзор</a>
+    <a href="search.html" class="nav-link active" data-page-link="search">Каталог и поиск</a>
+    <a href="rating.html" class="nav-link" data-page-link="rating">Оценка CINEVA</a>
+    <a href="tierlist.html" class="nav-link" id="navTierlistBtn" data-page-link="tierlist">Тирлисты</a>
+    <a href="watchlist.html" class="nav-link" id="navWatchlistBtn" data-page-link="watchlist">Избранное (<span id="watchlistCount">0</span>)</a>
   </nav>
 </div>
 
-<main id="page-home" class="site-page">
-  <div class="site-container">
-    <section class="home-hero">
-      <div class="hero-copy">
-        <div class="eyebrow">CINEVA · CINEMA INDEX</div>
-        <h1>Всё кино.<br><span>В одной истории.</span></h1>
-        <p>Исследуй фильмы и сериалы, открывай актёрский состав и съёмочную группу, изучай доступные профили и оценивай произведения по авторской системе CINEVA.</p>
-        <div class="hero-actions">
-          <button class="site-btn primary" data-go-search type="button">Исследовать кино ↗</button>
-          <button class="site-btn" id="heroRandomBtn" type="button">🎲 Мне повезёт!</button>
-          <button class="site-btn" data-page-link="rating" type="button">Моя оценка</button>
-        </div>
-      </div>
-      <aside class="hero-art" aria-label="Данные CINEVA">
-        <div class="hero-art-topline"><span>Больше, чем кино</span><span class="hero-art-live"><i></i> Кино в деталях</span></div>
-        <div class="hero-source-row">
-          <div class="hero-source tmdb"><small>Каталог и данные</small><strong>TMDB</strong><span>Постеры · описания · состав</span></div>
-          <div class="hero-source-plus" aria-hidden="true">+</div>
-          <div class="hero-source kp"><small>Второй источник</small><strong>Кинопоиск</strong><span>Оценки · данные · поиск</span></div>
-        </div>
-        <div class="hero-art-card"><div class="eyebrow">CINEVA INDEX</div><strong>Одна карточка. Два рейтинга. Своя оценка.</strong><p>Сравнивай оценки баз, изучай людей за кадром и формируй собственный взгляд на кино.</p><div class="hero-feature-pills"><span>Фильмы</span><span>Сериалы</span><span>Персоны</span><span>Фильмографии</span></div></div>
-      </aside>
-    </section>
-    <section class="shelf-section"><div class="section-head"><div><h2>Фильмы, которые обсуждают</h2><p>Популярные полнометражные истории</p></div><button class="text-link" class="active" data-page-link="search" type="button">Искать фильмы ↗</button></div><div class="media-row" id="homeMovies"></div></section>
-    <section class="shelf-section"><div class="section-head"><div><h2>Сериалы</h2><p>Мир историй, которые продолжаются</p></div><button class="text-link" class="active" data-page-link="search" type="button">Весь каталог ↗</button></div><div class="media-row" id="homeTv"></div></section>
-    <section class="shelf-section"><div class="section-head"><div><h2>Популярные люди кино</h2><p>Актёры, режиссёры и создатели</p></div><button class="text-link" class="active" data-page-link="search" type="button">Искать людей ↗</button></div><div class="media-row" id="homePeople"></div></section>
-  </div>
-</main>
 
 <main id="page-search" class="site-page active">
   <div class="site-container">
@@ -103,334 +75,15 @@
   </div>
 </main>
 
-<main id="page-watchlist" class="site-page">
-  <div class="site-container">
-    <div class="page-heading">
-      <div class="eyebrow">МОЯ КОЛЛЕКЦИЯ</div>
-      <h1>Избранное и планы к просмотру</h1>
-      <p>Произведения и персоны, сохранённые для быстрого доступа. Хранятся локально на этом устройстве.</p>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <span id="watchlistStatus" style="font-size:13px;color:#9aa5bb">Загрузка коллекции…</span>
-      <button class="site-btn" id="watchlistClearBtn" type="button" style="display:none">Очистить список</button>
-    </div>
-    <div class="search-results" id="watchlistGrid"></div>
-  </div>
-</main>
 
-<main id="page-tierlist" class="site-page">
-  <div class="site-container">
-    <div class="page-heading tierlist-page-head">
-      <div>
-        <div class="eyebrow">CINEVA · КОЛЛЕКЦИИ</div>
-        <h1 class="tierlist-main-title" id="tierlistMainTitle">Интерактивный тирлист фильмов</h1>
-        <p id="tierlistDesc">Создавай собственные ранжирования кино, кастомизируй цвета и названия рядов, перетаскивай постеры и экспортируй результат в PNG и JSON.</p>
-        <div class="tier-mode-switcher-wrap">
-          <div class="tier-mode-switcher" role="tablist" aria-label="Тип тирлиста">
-            <button type="button" class="tier-mode-btn active" data-tier-kind="movies" role="tab" aria-selected="true">🎬 Фильмы и сериалы</button>
-            <button type="button" class="tier-mode-btn" data-tier-kind="actors" role="tab" aria-selected="false">🎭 Актёры и персоны</button>
-          </div>
-        </div>
-      </div>
-      <div class="tierlist-top-actions">
-        <button class="site-btn" id="tierAddRowBtn" type="button">➕ Добавить ряд</button>
-        <button class="site-btn tier-btn-share" id="tierShareBtn" type="button" title="Поделиться ссылкой на проект тирлиста">🔗 Поделиться тирлистом</button>
-        <button class="site-btn" id="tierExportJsonBtn" type="button">💾 Скачать JSON</button>
-        <label class="site-btn" style="cursor:pointer;margin:0" title="Загрузить сохранённый JSON">
-          📂 Загрузить JSON
-          <input type="file" id="tierImportJsonInput" accept=".json,application/json" style="display:none">
-        </label>
-        <button class="site-btn primary" id="tierExportPngBtn" type="button">🎨 Скачать PNG</button>
-        <button class="site-btn" id="tierResetBtn" type="button" title="Сбросить тирлист к стандартному виду">🔄 Сбросить</button>
-      </div>
-    </div>
-
-    <!-- Tier list title & reviewer bar -->
-    <div class="tierlist-meta-bar">
-      <div class="tierlist-meta-field">
-        <label for="tierlistTitleInput">Название тирлиста</label>
-        <input type="text" id="tierlistTitleInput" value="Мой кинотирлист" maxlength="70" placeholder="Например: Любимые фантастические фильмы">
-      </div>
-      <div class="tierlist-meta-field">
-        <label for="tierlistAuthorInput">Автор / Рецензент</label>
-        <input type="text" id="tierlistAuthorInput" value="" maxlength="40" placeholder="Ваше имя (будет на экспортированной картинке)">
-      </div>
-    </div>
-
-    <!-- The Tier Board -->
-    <div class="tier-board" id="tierBoard"></div>
-
-    <!-- Pool and Search Section -->
-    <section class="tier-pool-section">
-      <div class="section-head">
-        <div>
-          <h2>Пул фильмов и поиск</h2>
-          <p>Ищи произведения в единой базе TMDB и Кинопоиска, добавляй их в тирлист кликом или перетаскиванием обложек.</p>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="site-btn" id="tierLoadWatchlistBtn" type="button">📥 Добавить из Избранного</button>
-          <button class="site-btn" id="tierClearPoolBtn" type="button">Очистить пул</button>
-        </div>
-      </div>
-
-      <!-- Quick Search Bar -->
-      <div class="tier-search-box">
-        <div class="tier-search-input-wrap">
-          <span class="search-symbol" aria-hidden="true">⌕</span>
-          <input id="tierSearchInput" type="search" placeholder="Быстрый поиск фильма или сериала для добавления в тирлист…" autocomplete="off">
-          <button class="site-btn" id="tierSearchBtn" type="button">Найти</button>
-        </div>
-        <div class="tier-search-status" id="tierSearchStatus"></div>
-        <div class="tier-search-results" id="tierSearchResults" hidden></div>
-      </div>
-
-      <!-- Unranked Pool Zone -->
-      <div class="tier-pool-wrap">
-        <div class="tier-pool-label">Нераспределённые фильмы (<span id="tierUnrankedCount">0</span>):</div>
-        <div class="tier-dropzone tier-unranked-zone" id="tierUnrankedZone" data-zone="unranked">
-          <div class="tier-empty-hint" id="tierPoolEmptyHint">Перетащите сюда постеры или воспользуйтесь быстрым поиском выше.</div>
-        </div>
-      </div>
-    </section>
-  </div>
-</main>
-
-<div class="settings-overlay" id="settingsOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="settingsHeading">
-  <div class="settings-card">
-    <h2 id="settingsHeading">Настройки API</h2>
-    <p>Укажи ключи источников, которые нужно подключить. Если оставить поле пустым, этот источник будет отключён; оба поля можно оставить пустыми и пользоваться ручным вводом.</p>
-    <div class="setting-field">
-      <label for="settingTmdbKey">API-ключ TMDB (v3 auth token / key)</label>
-      <input id="settingTmdbKey" type="text" placeholder="TMDB API v3 Key">
-    </div>
-    <div class="setting-field">
-      <label for="settingKpKey">API-ключ Кинопоиска (kinopoiskapiunofficial)</label>
-      <input id="settingKpKey" type="text" placeholder="Kinopoisk Unofficial API Key">
-    </div>
-    <div class="settings-warning">Ключи сохраняются локально в вашем браузере (LocalStorage).</div>
-    <div class="api-check-panel">
-      <div class="api-check-title">Состояние источников</div>
-      <div id="apiCheckStatus" class="api-check-status" role="status" aria-live="polite">Проверь подключение, чтобы узнать, отвечают ли TMDB и Кинопоиск в этом браузере.</div>
-      <button class="site-btn" id="checkApiBtn" type="button">Проверить подключение</button>
-    </div>
-    <div class="settings-actions">
-      <button class="site-btn" id="settingsResetDefault" type="button">Удалить сохранённые ключи</button>
-      <button class="site-btn" id="settingsCloseBtn" type="button">Закрыть</button>
-      <button class="site-btn primary" id="settingsSaveBtn" type="button">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<main id="page-detail" class="site-page">
+<main id="page-detail" class="site-page" style="display:none">
   <div class="site-container">
     <button class="site-btn" id="detailBackBtn" type="button">← Назад к результатам</button>
     <div id="detailContent" style="margin-top:18px"></div>
   </div>
 </main>
 
-<section id="page-rating" class="site-page rating-page">
-<div class="reviewer-overlay" id="reviewerOverlay" role="dialog" aria-modal="true" aria-labelledby="reviewerHeading">
- <div class="reviewer-box"><h2 id="reviewerHeading">Кто рецензирует?</h2><p>Имя будет указано внизу экспортированной карточки рядом с датой.</p><input id="reviewerNameInput" type="text" maxlength="40" placeholder="Имя или псевдоним" autocomplete="name"><button class="primary" id="reviewerSave" type="button">Продолжить</button></div>
-</div>
-<div class="app">
-<header>
- <div class="logo"><div class="logo-mark">C</div>CINEVA · CINEMA INDEX</div>
- <div class="header-tools"><button class="reviewer-edit" id="reviewerEdit" type="button" title="Изменить имя рецензента">Рецензент: <span id="reviewerHeaderName">—</span></button></div>
-</header>
-<div class="intro">
- <h1>Оценка и ценность кино<span style="color:var(--lime)">.</span></h1>
- <p>Два взгляда на кино: рейтинг впечатления и индекс ценности произведения.</p>
-</div>
 
-<div class="layout">
-<section class="panel editor">
- <div class="panel-head">
-  <div class="panel-head-left"><span class="step">01</span> Данные произведения</div>
- </div>
- <div class="tmdb-search">
-  <div class="tmdb-search-top"><div class="tmdb-search-title">Поиск в TMDB и Кинопоиске</div></div>
-  <div class="tmdb-search-row"><input id="tmdbQuery" type="text" placeholder="Например, Интерстеллар / Interstellar" maxlength="120" autocomplete="off" aria-label="Поиск фильма или сериала в Кинопоиске"><button class="primary" id="tmdbSearchBtn" type="button">Поиск</button></div>
-  <div class="tmdb-status" id="tmdbStatus" role="status" aria-live="polite">Поиск по названию…</div>
-  <div class="tmdb-results" id="tmdbResults"></div>
-  <button id="manualEntryBtn" type="button" class="manual-entry">Перейти к ручному вводу</button>
- </div>
-
- <div id="editorDetails" hidden>
- <div class="fields" id="metadataFields">
-  <div class="field full"><label for="title">Название</label><input id="title" type="text" placeholder="Например, Интерстеллар" maxlength="100"></div>
-  <div class="field"><label for="director">Режиссёр / шоураннер</label><input id="director" type="text" placeholder="Кристофер Нолан" maxlength="100"></div>
-  <div class="field"><label for="year">Год выхода</label><input id="year" type="number" min="1888" max="2100" placeholder="2014"></div>
-  <div class="field"><label for="genre">Жанр</label><input id="genre" type="text" placeholder="Фантастика, драма" maxlength="100"></div>
-  <div class="field"><label for="kind">Формат</label><select id="kind"><option>Фильм</option><option>Мультфильм</option><option>Сериал</option><option>Анимационный сериал</option><option>Короткометражка</option><option>Мини-сериал</option></select></div>
-  <div class="field full"><label for="posterFile">Постер / кадр (или загрузи свой файл)</label><input id="posterFile" type="file" accept="image/*"></div>
- </div>
-
- <hr>
-
- <div class="panel-head">
-  <div class="panel-head-left"><span class="step">02</span> Базовая оценка (Шкала 90)</div>
-  <span class="panel-badge" id="baseSumBadge">База: 20 / 40 · Качество: 50%</span>
- </div>
- <p class="value-section-intro">4 базовых критерия (от 1 до 10 баллов) формируют <b>Качество реализации</b> (1 балл = 2.5%, максимум 40 баллов = 100%) и умножаются на коэффициент <b>1.4</b> и множитель <b>Атмосферы / Вайба</b>.</p>
- <div id="criteria"></div>
- <div class="criterion vibe">
-  <div class="crit-head"><div class="crit-name">Атмосфера / Вайб</div><div class="val" id="vibeValue">5</div></div>
-  <div class="hint">Эмоциональное погружение и послевкусие (множитель от ×1.0000 до ×1.6072 для 90-балльного рейтинга).</div>
-  <div class="range-line"><span class="range-edge">1</span><input id="vibe" type="range" min="1" max="10" value="5" step="1" aria-label="Атмосфера / Вайб"><span class="range-edge">10</span></div><div class="depth-desc" id="vibeDesc">5 из 10 — умеренное эмоциональное погружение.</div>
- </div>
-
- <hr>
-
- <div class="panel-head">
-  <div class="panel-head-left"><span class="step">03</span> Ценность кино</div>
-  <span class="panel-badge" id="valueFormulaBadge">Ценность: 10.05 / 30</span>
- </div>
-
- <div class="value-grid">
-  <!-- 1. Редкость -->
-  <div class="value-card">
-   <div class="value-card-head">
-    <div class="value-card-title">1. Редкость</div>
-    <div class="value-card-score" id="rarityScoreDisplay">2.0 / 5</div>
-   </div>
-   <p class="value-card-help">Оценивай не качество, а распространённость жанра и формата исполнения: от привычного решения до редкого или уникального для кино.</p>
-   <div class="sub-field">
-    <label for="rarityGenre"><span>Редкость жанра / поджанра</span><b id="rarityGenreVal">1.0</b></label>
-    <div class="range-line"><span class="range-edge">0.5</span><input id="rarityGenre" type="range" min="0.5" max="2.5" value="1.0" step="0.5" aria-label="Редкость жанра / поджанра"><span class="range-edge">2.5</span></div><div class="depth-desc" id="rarityGenreDesc"></div>
-   </div>
-   <div class="sub-field">
-    <label for="rarityFormat"><span>Редкость формата исполнения</span><b id="rarityFormatVal">1.0</b></label>
-    <div class="range-line"><span class="range-edge">0.5</span><input id="rarityFormat" type="range" min="0.5" max="2.5" value="1.0" step="0.5" aria-label="Редкость формата исполнения"><span class="range-edge">2.5</span></div><div class="depth-desc" id="rarityFormatDesc"></div>
-   </div>
-  </div>
-
-  <!-- 2. Целостность -->
-  <div class="value-card">
-   <div class="value-card-head">
-    <div class="value-card-title">2. Целостность</div>
-    <div class="value-card-score" id="integrityScoreDisplay">3.5 / 5</div>
-   </div>
-   <p class="value-card-help">Учитывай формат произведения, единство жанров и идей, а также наличие связного смыслового высказывания.</p>
-   <div class="sub-field">
-    <label for="integFormat"><span>Формат произведения</span><b id="integFormatVal">1.0</b></label>
-    <div class="range-line"><span class="range-edge">0.5</span><input id="integFormat" type="range" min="0.5" max="1.0" value="1.0" step="0.5" aria-label="Формат произведения"><span class="range-edge">1.0</span></div><div class="depth-desc" id="integFormatDesc"></div>
-   </div>
-   <div class="sub-field">
-    <label for="integGenre"><span>Жанровая и идейная целостность</span><b id="integGenreVal">1.5</b></label>
-    <div class="range-line"><span class="range-edge">0.5</span><input id="integGenre" type="range" min="0.5" max="2.5" value="1.5" step="0.5" aria-label="Жанровая и идейная целостность"><span class="range-edge">2.5</span></div><div class="depth-desc" id="integGenreDesc"></div>
-   </div>
-   <div class="sub-field">
-    <label for="integMeaning"><span>Смысловая целостность</span><b id="integMeaningVal">1.0</b></label>
-    <div class="range-line"><span class="range-edge">0.5</span><input id="integMeaning" type="range" min="0.5" max="1.5" value="1.0" step="0.5" aria-label="Смысловая и драматургическая целостность"><span class="range-edge">1.5</span></div><div class="depth-desc" id="integMeaningDesc"></div>
-   </div>
-  </div>
-
-  <!-- 3. Глубина -->
-  <div class="value-card full">
-   <div class="value-card-head">
-    <div class="value-card-title">3. Глубина (Вертикаль смысла)</div>
-    <div class="value-card-score" id="depthScoreDisplay">3 / 5</div>
-   </div>
-   <p class="value-card-help">Пять уровней идут от преимущественно развлекательного посыла к многослойным универсальным смыслам, выходящим за пределы сюжета и эпохи.</p>
-   <div class="range-line">
-    <span class="range-edge">1</span>
-    <input id="depth" type="range" min="1" max="5" value="3" step="1" aria-label="Глубина">
-    <span class="range-edge">5</span>
-   </div>
-   <div class="depth-desc" id="depthDesc">3 балла — Чувственная рефлексия, психологизм, исследование личной драмы и места человека в мире.</div>
-  </div>
-
-  <!-- 4. Влияние -->
-  <div class="value-card full impact-card">
-   <div class="value-card-head">
-    <div class="value-card-title">4. Влияние (Масштаб × Ожидание / Резонанс)</div>
-    <div class="value-card-score" id="impactScoreDisplay">×1.62</div>
-   </div>
-   <p class="value-card-help">Оценивай известность создателя и ожидание релиза: медийные упоминания, аудиторию предыдущих работ, анонсы, трейлеры, промокампанию и обсуждаемость.</p>
-   <div class="fields">
-    <div class="sub-field">
-     <label for="impactScale"><span>Известность автора / создателя</span><b id="impactScaleVal">2.0</b></label>
-     <div class="range-line"><span class="range-edge">0.5</span><input id="impactScale" type="range" min="0.5" max="2.5" value="2.0" step="0.5" aria-label="Известность автора / масштаб проекта"><span class="range-edge">2.5</span></div><div class="depth-desc" id="impactScaleDesc"></div>
-    </div>
-    <div class="sub-field">
-     <label for="impactHype"><span>Ожидание релиза и промо-резонанс</span><b id="impactHypeVal">2.0</b></label>
-     <div class="range-line"><span class="range-edge">0.5</span><input id="impactHype" type="range" min="0.5" max="2.5" value="2.0" step="0.5" aria-label="Ожидание релиза и культурный резонанс"><span class="range-edge">2.5</span></div><div class="depth-desc" id="impactHypeDesc"></div>
-    </div>
-   </div>
-  </div>
- </div>
- </div><!-- /editorDetails -->
-</section>
-
-<!-- RIGHT PREVIEW CARD -->
-<aside class="panel result" id="resultCard" hidden>
- <div class="card-topbar">
-  <div class="rzt-brand"><span class="rzt-brand-dot"></span>CINEVA · КАРТОЧКА ФИЛЬМА</div>
-  <div class="tier-pill" id="tierPill">ИЗУМРУДНЫЙ ФИЛЬМ</div>
- </div>
-
- <div class="poster">
-  <img id="posterImg" alt="Обложка произведения">
-  <div class="poster-placeholder" id="posterPlaceholder"><span class="symbol">КИНО</span><b>CINEVA CINEMA</b></div>
-  <div class="poster-shade"></div>
-  <div class="poster-copy">
-   <h2 id="previewTitle">Название произведения</h2>
-   <div class="meta">
-    <span class="type-pill" id="previewKind">ФИЛЬМ</span>
-    <span id="previewDirector">Режиссёр / создатель</span>
-    <span id="previewYear">Год</span>
-    <span id="previewGenre">Жанр</span>
-   </div>
-  </div>
- </div>
-
- <div class="dual-scores">
-  <div class="score-box">
-   <div class="score-box-top">
-    <div class="kicker">РЕЙТИНГ</div>
-    <div class="quality-pill" id="previewBaseSum">20/40</div>
-   </div>
-   <div class="grade"><span id="score">36</span><span>/ 90</span></div>
-   <div class="score-sub"><span>Базовая оценка</span><span id="previewVibeMult">×1.27</span></div>
-  </div>
-  <div class="score-box value-box">
-   <div class="score-box-top">
-    <div class="kicker">ЦЕННОСТЬ КИНО</div>
-    <div class="quality-pill" id="previewTierShort">Изумруд</div>
-   </div>
-   <div class="value-grade"><span id="valueScore">13.77</span><span>/ 30</span></div>
-   <div class="score-sub"><span>Индекс ценности</span></div>
-  </div>
- </div>
-
- <div class="section-mini-title"><span>БАЗОВЫЕ КРИТЕРИИ</span><span>КАЧЕСТВО: <b id="previewQualityPct" style="color:#fff">50%</b></span></div>
- <div class="ratings">
-  <div class="rating-chip"><span>Сценарий / Образы</span><strong id="share-story">5</strong></div>
-  <div class="rating-chip"><span>Структура / Темп</span><strong id="share-structure">5</strong></div>
-  <div class="rating-chip"><span>Режиссура / Стиль</span><strong id="share-craft">5</strong></div>
-  <div class="rating-chip"><span>Актёры / Харизма</span><strong id="share-characters">5</strong></div>
-  <div class="rating-chip vibe-chip"><span>Атмосфера / Вайб</span><strong id="share-vibe">5</strong></div>
- </div>
-
- <div class="section-mini-title" style="margin-top:12px"><span>ИНДЕКС ЦЕННОСТИ</span><span id="previewTierRange">12.00 – 17.99</span></div>
- <div class="value-strip">
-  <div class="v-pill"><small>Редкость</small><strong id="chipRarity">2.0/5</strong></div>
-  <div class="v-pill"><small>Целостн.</small><strong id="chipIntegrity">3.5/5</strong></div>
-  <div class="v-pill"><small>Глубина</small><strong id="chipDepth">3/5</strong></div>
-  <div class="v-pill"><small>Качество</small><strong id="chipQuality">50%</strong></div>
-  <div class="v-pill highlight"><small>Влияние</small><strong id="chipImpact">×1.62</strong></div>
- </div>
-
- <div class="actions">
-  <button class="primary" id="saveImage">Скачать PNG</button>
-  <button class="rating-share-btn" id="ratingShareBtn" type="button" title="Поделиться ссылкой на оценку этого произведения">🔗 Поделиться оценкой</button>
-  <button id="reset">Сбросить</button>
- </div>
- <p class="tip">Коллекционная PNG-карточка (1200×1240) с постером, рейтингами и статусом.</p>
-</aside>
-</div>
-</div>
-</section>
 <footer class="site-footer">CINEVA — независимый проект о кино. Данные карточек, рейтинги и изображения загружаются через API Кинопоиска и TMDB. CINEVA не связан с Кинопоиском или TMDB. Для публичного запуска перенеси ключ API на сервер.</footer>
 
 <div class="toast-container" id="toastContainer"></div>

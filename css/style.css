@@ -623,3 +623,35 @@ button,input{font:inherit}
   border-color: #c5ff65;
   transform: translateY(-1px);
 }
+
+
+/* Multi-page Nav Link Support */
+.site-nav a {
+  text-decoration: none;
+  flex: 0 0 auto;
+  padding: 13px 15px 15px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: #8e99b1;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: color .15s ease, border-color .15s ease;
+}
+.site-nav a:hover {
+  color: #f5f7fc;
+}
+.site-nav a.active {
+  color: #e8f8ca;
+  border-bottom-color: var(--cv-accent, #c5ff65);
+}
+@media (max-width: 640px) {
+  .site-nav a {
+    padding: 12px 12px 13px;
+    font-size: 11px;
+  }
+}

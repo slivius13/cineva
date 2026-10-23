@@ -6,7 +6,7 @@
 <title>Система оценки CINEVA — Рейтинг и Ценность</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body data-default-page="rating">
+<body data-page="rating">
 
 <div class="api-welcome-overlay" id="apiWelcomeOverlay" role="dialog" aria-modal="true" aria-labelledby="apiWelcomeHeading" hidden>
   <div class="api-welcome-card">
@@ -31,7 +31,7 @@
 
 <div class="site-shell">
   <div class="site-topbar">
-    <button class="site-logo" type="button" data-page-link="home" aria-label="CINEVA — главная">
+    <button class="site-logo" type="button" class="active" data-page-link="home" aria-label="CINEVA — главная">
       <span class="site-logo-mark">C</span><span class="site-logo-word">CINEVA<small>CINEMA INDEX</small></span>
     </button>
     <form class="global-search" id="globalSearchForm" role="search">
@@ -46,189 +46,16 @@
     </div>
   </div>
   <nav class="site-nav" aria-label="Основная навигация">
-    <button  type="button" data-page-link="home">Обзор</button>
-    <button type="button" data-page-link="search">Каталог и поиск</button>
-    <button type="button" class="active" data-page-link="rating">Оценка CINEVA</button>
-    <button type="button" data-page-link="tierlist" id="navTierlistBtn">Тирлисты</button>
-    <button type="button" data-page-link="watchlist" id="navWatchlistBtn">Избранное (<span id="watchlistCount">0</span>)</button>
+    <a href="index.html" class="nav-link" data-page-link="home">Обзор</a>
+    <a href="search.html" class="nav-link" data-page-link="search">Каталог и поиск</a>
+    <a href="rating.html" class="nav-link active" data-page-link="rating">Оценка CINEVA</a>
+    <a href="tierlist.html" class="nav-link" id="navTierlistBtn" data-page-link="tierlist">Тирлисты</a>
+    <a href="watchlist.html" class="nav-link" id="navWatchlistBtn" data-page-link="watchlist">Избранное (<span id="watchlistCount">0</span>)</a>
   </nav>
 </div>
 
-<main id="page-home" class="site-page">
-  <div class="site-container">
-    <section class="home-hero">
-      <div class="hero-copy">
-        <div class="eyebrow">CINEVA · CINEMA INDEX</div>
-        <h1>Всё кино.<br><span>В одной истории.</span></h1>
-        <p>Исследуй фильмы и сериалы, открывай актёрский состав и съёмочную группу, изучай доступные профили и оценивай произведения по авторской системе CINEVA.</p>
-        <div class="hero-actions">
-          <button class="site-btn primary" data-go-search type="button">Исследовать кино ↗</button>
-          <button class="site-btn" id="heroRandomBtn" type="button">🎲 Мне повезёт!</button>
-          <button class="site-btn" class="active" data-page-link="rating" type="button">Моя оценка</button>
-        </div>
-      </div>
-      <aside class="hero-art" aria-label="Данные CINEVA">
-        <div class="hero-art-topline"><span>Больше, чем кино</span><span class="hero-art-live"><i></i> Кино в деталях</span></div>
-        <div class="hero-source-row">
-          <div class="hero-source tmdb"><small>Каталог и данные</small><strong>TMDB</strong><span>Постеры · описания · состав</span></div>
-          <div class="hero-source-plus" aria-hidden="true">+</div>
-          <div class="hero-source kp"><small>Второй источник</small><strong>Кинопоиск</strong><span>Оценки · данные · поиск</span></div>
-        </div>
-        <div class="hero-art-card"><div class="eyebrow">CINEVA INDEX</div><strong>Одна карточка. Два рейтинга. Своя оценка.</strong><p>Сравнивай оценки баз, изучай людей за кадром и формируй собственный взгляд на кино.</p><div class="hero-feature-pills"><span>Фильмы</span><span>Сериалы</span><span>Персоны</span><span>Фильмографии</span></div></div>
-      </aside>
-    </section>
-    <section class="shelf-section"><div class="section-head"><div><h2>Фильмы, которые обсуждают</h2><p>Популярные полнометражные истории</p></div><button class="text-link" data-page-link="search" type="button">Искать фильмы ↗</button></div><div class="media-row" id="homeMovies"></div></section>
-    <section class="shelf-section"><div class="section-head"><div><h2>Сериалы</h2><p>Мир историй, которые продолжаются</p></div><button class="text-link" data-page-link="search" type="button">Весь каталог ↗</button></div><div class="media-row" id="homeTv"></div></section>
-    <section class="shelf-section"><div class="section-head"><div><h2>Популярные люди кино</h2><p>Актёры, режиссёры и создатели</p></div><button class="text-link" data-page-link="search" type="button">Искать людей ↗</button></div><div class="media-row" id="homePeople"></div></section>
-  </div>
-</main>
 
-<main id="page-search" class="site-page">
-  <div class="site-container">
-    <div class="page-heading"><div class="eyebrow">КАТАЛОГ CINEVA</div><h1 id="searchPageTitle">Результаты поиска</h1><p>Фильмы, сериалы, актёры и режиссёры в одном каталоге.</p></div>
-    <form id="pageSearchForm" class="global-search" style="max-width:760px"><span class="search-symbol" aria-hidden="true">⌕</span><input id="pageSearchInput" type="search" maxlength="120" placeholder="Например, Интерстеллар или Кристофер Нолан" autocomplete="off" aria-label="Поиск в каталоге"><button class="site-btn primary" type="submit">Найти</button></form>
-    
-    <div id="searchSuggestionBanner" class="search-suggestion-banner" hidden></div>
-    
-    <div class="search-toolbar">
-      <span style="font-size:11px;color:#808ca5;font-weight:750">Фильтр:</span>
-      <button class="filter-chip active" type="button" data-search-mode="multi">Все</button>
-      <button class="filter-chip" type="button" data-search-mode="movie">Фильмы</button>
-      <button class="filter-chip" type="button" data-search-mode="tv">Сериалы</button>
-      <button class="filter-chip" type="button" data-search-mode="person">Персоны</button>
-    </div>
-
-    <div class="search-status" id="searchStatus" role="status" aria-live="polite">Введи название в строке поиска.</div>
-    <div class="search-results" id="searchResults"></div>
-  </div>
-</main>
-
-<main id="page-watchlist" class="site-page">
-  <div class="site-container">
-    <div class="page-heading">
-      <div class="eyebrow">МОЯ КОЛЛЕКЦИЯ</div>
-      <h1>Избранное и планы к просмотру</h1>
-      <p>Произведения и персоны, сохранённые для быстрого доступа. Хранятся локально на этом устройстве.</p>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <span id="watchlistStatus" style="font-size:13px;color:#9aa5bb">Загрузка коллекции…</span>
-      <button class="site-btn" id="watchlistClearBtn" type="button" style="display:none">Очистить список</button>
-    </div>
-    <div class="search-results" id="watchlistGrid"></div>
-  </div>
-</main>
-
-<main id="page-tierlist" class="site-page">
-  <div class="site-container">
-    <div class="page-heading tierlist-page-head">
-      <div>
-        <div class="eyebrow">CINEVA · КОЛЛЕКЦИИ</div>
-        <h1 class="tierlist-main-title" id="tierlistMainTitle">Интерактивный тирлист фильмов</h1>
-        <p id="tierlistDesc">Создавай собственные ранжирования кино, кастомизируй цвета и названия рядов, перетаскивай постеры и экспортируй результат в PNG и JSON.</p>
-        <div class="tier-mode-switcher-wrap">
-          <div class="tier-mode-switcher" role="tablist" aria-label="Тип тирлиста">
-            <button type="button" class="tier-mode-btn active" data-tier-kind="movies" role="tab" aria-selected="true">🎬 Фильмы и сериалы</button>
-            <button type="button" class="tier-mode-btn" data-tier-kind="actors" role="tab" aria-selected="false">🎭 Актёры и персоны</button>
-          </div>
-        </div>
-      </div>
-      <div class="tierlist-top-actions">
-        <button class="site-btn" id="tierAddRowBtn" type="button">➕ Добавить ряд</button>
-        <button class="site-btn tier-btn-share" id="tierShareBtn" type="button" title="Поделиться ссылкой на проект тирлиста">🔗 Поделиться тирлистом</button>
-        <button class="site-btn" id="tierExportJsonBtn" type="button">💾 Скачать JSON</button>
-        <label class="site-btn" style="cursor:pointer;margin:0" title="Загрузить сохранённый JSON">
-          📂 Загрузить JSON
-          <input type="file" id="tierImportJsonInput" accept=".json,application/json" style="display:none">
-        </label>
-        <button class="site-btn primary" id="tierExportPngBtn" type="button">🎨 Скачать PNG</button>
-        <button class="site-btn" id="tierResetBtn" type="button" title="Сбросить тирлист к стандартному виду">🔄 Сбросить</button>
-      </div>
-    </div>
-
-    <!-- Tier list title & reviewer bar -->
-    <div class="tierlist-meta-bar">
-      <div class="tierlist-meta-field">
-        <label for="tierlistTitleInput">Название тирлиста</label>
-        <input type="text" id="tierlistTitleInput" value="Мой кинотирлист" maxlength="70" placeholder="Например: Любимые фантастические фильмы">
-      </div>
-      <div class="tierlist-meta-field">
-        <label for="tierlistAuthorInput">Автор / Рецензент</label>
-        <input type="text" id="tierlistAuthorInput" value="" maxlength="40" placeholder="Ваше имя (будет на экспортированной картинке)">
-      </div>
-    </div>
-
-    <!-- The Tier Board -->
-    <div class="tier-board" id="tierBoard"></div>
-
-    <!-- Pool and Search Section -->
-    <section class="tier-pool-section">
-      <div class="section-head">
-        <div>
-          <h2>Пул фильмов и поиск</h2>
-          <p>Ищи произведения в единой базе TMDB и Кинопоиска, добавляй их в тирлист кликом или перетаскиванием обложек.</p>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="site-btn" id="tierLoadWatchlistBtn" type="button">📥 Добавить из Избранного</button>
-          <button class="site-btn" id="tierClearPoolBtn" type="button">Очистить пул</button>
-        </div>
-      </div>
-
-      <!-- Quick Search Bar -->
-      <div class="tier-search-box">
-        <div class="tier-search-input-wrap">
-          <span class="search-symbol" aria-hidden="true">⌕</span>
-          <input id="tierSearchInput" type="search" placeholder="Быстрый поиск фильма или сериала для добавления в тирлист…" autocomplete="off">
-          <button class="site-btn" id="tierSearchBtn" type="button">Найти</button>
-        </div>
-        <div class="tier-search-status" id="tierSearchStatus"></div>
-        <div class="tier-search-results" id="tierSearchResults" hidden></div>
-      </div>
-
-      <!-- Unranked Pool Zone -->
-      <div class="tier-pool-wrap">
-        <div class="tier-pool-label">Нераспределённые фильмы (<span id="tierUnrankedCount">0</span>):</div>
-        <div class="tier-dropzone tier-unranked-zone" id="tierUnrankedZone" data-zone="unranked">
-          <div class="tier-empty-hint" id="tierPoolEmptyHint">Перетащите сюда постеры или воспользуйтесь быстрым поиском выше.</div>
-        </div>
-      </div>
-    </section>
-  </div>
-</main>
-
-<div class="settings-overlay" id="settingsOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="settingsHeading">
-  <div class="settings-card">
-    <h2 id="settingsHeading">Настройки API</h2>
-    <p>Укажи ключи источников, которые нужно подключить. Если оставить поле пустым, этот источник будет отключён; оба поля можно оставить пустыми и пользоваться ручным вводом.</p>
-    <div class="setting-field">
-      <label for="settingTmdbKey">API-ключ TMDB (v3 auth token / key)</label>
-      <input id="settingTmdbKey" type="text" placeholder="TMDB API v3 Key">
-    </div>
-    <div class="setting-field">
-      <label for="settingKpKey">API-ключ Кинопоиска (kinopoiskapiunofficial)</label>
-      <input id="settingKpKey" type="text" placeholder="Kinopoisk Unofficial API Key">
-    </div>
-    <div class="settings-warning">Ключи сохраняются локально в вашем браузере (LocalStorage).</div>
-    <div class="api-check-panel">
-      <div class="api-check-title">Состояние источников</div>
-      <div id="apiCheckStatus" class="api-check-status" role="status" aria-live="polite">Проверь подключение, чтобы узнать, отвечают ли TMDB и Кинопоиск в этом браузере.</div>
-      <button class="site-btn" id="checkApiBtn" type="button">Проверить подключение</button>
-    </div>
-    <div class="settings-actions">
-      <button class="site-btn" id="settingsResetDefault" type="button">Удалить сохранённые ключи</button>
-      <button class="site-btn" id="settingsCloseBtn" type="button">Закрыть</button>
-      <button class="site-btn primary" id="settingsSaveBtn" type="button">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<main id="page-detail" class="site-page">
-  <div class="site-container">
-    <button class="site-btn" id="detailBackBtn" type="button">← Назад к результатам</button>
-    <div id="detailContent" style="margin-top:18px"></div>
-  </div>
-</main>
-
-<section id="page-rating" class="site-page active rating-page">
+<section id="page-rating" class="site-page rating-page active">
 <div class="reviewer-overlay" id="reviewerOverlay" role="dialog" aria-modal="true" aria-labelledby="reviewerHeading">
  <div class="reviewer-box"><h2 id="reviewerHeading">Кто рецензирует?</h2><p>Имя будет указано внизу экспортированной карточки рядом с датой.</p><input id="reviewerNameInput" type="text" maxlength="40" placeholder="Имя или псевдоним" autocomplete="name"><button class="primary" id="reviewerSave" type="button">Продолжить</button></div>
 </div>
@@ -431,6 +258,15 @@
 </div>
 </div>
 </section>
+
+<main id="page-detail" class="site-page" style="display:none">
+  <div class="site-container">
+    <button class="site-btn" id="detailBackBtn" type="button">← Назад к результатам</button>
+    <div id="detailContent" style="margin-top:18px"></div>
+  </div>
+</main>
+
+
 <footer class="site-footer">CINEVA — независимый проект о кино. Данные карточек, рейтинги и изображения загружаются через API Кинопоиска и TMDB. CINEVA не связан с Кинопоиском или TMDB. Для публичного запуска перенеси ключ API на сервер.</footer>
 
 <div class="toast-container" id="toastContainer"></div>

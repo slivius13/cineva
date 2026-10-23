@@ -197,21 +197,24 @@
   function showPage(key, skipHistory) {
     const id = pageIds[key];
     if (!id) return;
-    if (!skipHistory && activePage !== key && key === 'detail') {
-      previousPage = activePage;
-    }
-    document.querySelectorAll('.site-page').forEach(page => page.classList.toggle('active', page.id === id));
-    activePage = key;
-    if (byId('liveSearchResults')) byId('liveSearchResults').hidden = true;
-    setActiveNav(key === 'detail' ? (previousPage || 'home') : key);
-    window.scrollTo({top:0, behavior:'smooth'});
-    if (key === 'watchlist') updateWatchlistUI();
-    if (key === 'tierlist' && typeof window.renderTierBoard === 'function') window.renderTierBoard();
-    if (window.location.protocol.startsWith('http')) {
-      const pageFile = key === 'home' ? 'index.html' : `${key}.html`;
-      if (!window.location.pathname.endsWith(pageFile) && !skipHistory) {
-        try { history.pushState(null, '', pageFile); } catch (_) {}
+    const targetEl = document.getElementById(id);
+    if (targetEl) {
+      if (!skipHistory && activePage !== key && key === 'detail') {
+        previousPage = activePage;
       }
+      document.querySelectorAll('.site-page').forEach(page => page.classList.toggle('active', page.id === id));
+      if (key === 'detail') {
+        targetEl.style.display = 'block';
+      }
+      activePage = key;
+      if (byId('liveSearchResults')) byId('liveSearchResults').hidden = true;
+      setActiveNav(key === 'detail' ? (previousPage || 'home') : key);
+      window.scrollTo({top:0, behavior:'smooth'});
+      if (key === 'watchlist') updateWatchlistUI();
+      if (key === 'tierlist' && typeof window.renderTierBoard === 'function') window.renderTierBoard();
+    } else {
+      const targetFile = key === 'home' ? 'index.html' : `${key}.html`;
+      window.location.href = targetFile;
     }
   }
 
@@ -815,13 +818,18 @@
 
   // Quick rate directly from card
   async function quickRate(id, mediaType, source) {
-    showToast('Подготавливаем карточку для оценки…', 'info');
-    if (source === 'kinopoisk') {
-      await openKinopoiskTitle(id);
+    const curPage = document.body ? (document.body.dataset.page || 'home') : 'home';
+    if (curPage === 'rating') {
+      showToast('Подготавливаем карточку для оценки…', 'info');
+      if (source === 'kinopoisk') await openKinopoiskTitle(id);
+      else await openTitle(id, mediaType);
+      rateCurrent();
     } else {
-      await openTitle(id, mediaType);
+      try {
+        sessionStorage.setItem('cineva_rate_item', JSON.stringify({ id, type: mediaType, source }));
+      } catch (_) {}
+      window.location.href = 'rating.html';
     }
-    rateCurrent();
   }
 
   // Keyboard support for media cards (quick-action buttons keep their native behavior).
@@ -1119,11 +1127,18 @@
   });
 
   byId('detailBackBtn').addEventListener('click', () => {
-    const target = previousPage || 'home';
-    showPage(target, true);
-    if (target === 'search' && lastSearchQuery) {
-      byId('pageSearchInput').value = lastSearchQuery;
-      byId('globalSearchInput').value = lastSearchQuery;
+    const detailEl = document.getElementById('page-detail');
+    if (detailEl) {
+      detailEl.style.display = 'none';
+      detailEl.classList.remove('active');
+    }
+    const curPage = document.body ? (document.body.dataset.page || 'home') : 'home';
+    const mainEl = document.getElementById(pageIds[curPage]);
+    if (mainEl) {
+      mainEl.classList.add('active');
+      activePage = curPage;
+    } else if (previousPage && pageIds[previousPage]) {
+      showPage(previousPage);
     }
   });
 
@@ -1455,15 +1470,40 @@
     } catch (_) {}
   }
 
-  // Initialize Tier List Storage & URL routing
-  if (typeof window.loadTierListStorage === 'function') window.loadTierListStorage();
-  checkUrlRouting();
-  if (typeof window.checkSharedTierFromUrl === 'function') window.checkSharedTierFromUrl();
-  if (typeof window.checkSharedRatingFromUrl === 'function') window.checkSharedRatingFromUrl();
-
-  // Initial load waits until the first-run source choice has been made.
+  // Genuine Multi-Page Startup
+  const currentPageKey = document.body ? (document.body.dataset.page || 'home') : 'home';
+  activePage = currentPageKey;
   updateWatchlistCount();
-  if (openApiWelcomeIfNeeded()) loadHomeShelves();
+
+  if (currentPageKey === 'home') {
+    if (openApiWelcomeIfNeeded()) loadHomeShelves();
+  } else if (currentPageKey === 'tierlist') {
+    if (typeof window.loadTierListStorage === 'function') window.loadTierListStorage();
+    if (typeof window.renderTierBoard === 'function') window.renderTierBoard();
+    if (typeof window.checkSharedTierFromUrl === 'function') window.checkSharedTierFromUrl();
+  } else if (currentPageKey === 'watchlist') {
+    updateWatchlistUI();
+  } else if (currentPageKey === 'rating') {
+    if (typeof window.updateRating === 'function') window.updateRating();
+    if (typeof window.checkSharedRatingFromUrl === 'function') window.checkSharedRatingFromUrl();
+    try {
+      const pendingRate = sessionStorage.getItem('cineva_rate_item');
+      if (pendingRate) {
+        sessionStorage.removeItem('cineva_rate_item');
+        const pItem = JSON.parse(pendingRate);
+        if (pItem && pItem.id) {
+          if (pItem.source === 'kinopoisk') openKinopoiskTitle(pItem.id);
+          else openTitle(pItem.id, pItem.type || 'movie');
+        }
+      }
+    } catch (_) {}
+  } else if (currentPageKey === 'search') {
+    const sParams = new URLSearchParams(window.location.search);
+    const sQ = sParams.get('q') || sParams.get('search');
+    if (sQ) goToSearch('multi', sQ);
+  }
+
+  checkUrlRouting();
 
   // Expose helpers globally
   window.showPage = showPage;
