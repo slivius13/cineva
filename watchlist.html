@@ -50,7 +50,11 @@
     <a href="search.html" class="nav-link">Каталог и поиск</a>
     <a href="rating.html" class="nav-link">Оценка CINEVA</a>
     <a href="tierlist.html" class="nav-link" id="navTierlistBtn">Тирлисты</a>
-    <a href="watchlist.html" class="nav-link active" id="navWatchlistBtn">Избранное (<span id="watchlistCount">0</span>)</a>
+    <a href="profile.html" class="nav-link nav-profile-link" id="navProfileBtn">
+      <span class="nav-profile-avatar-thumb" id="navProfileAvatar">👤</span>
+      <span id="navProfileName">Профиль</span>
+      <span class="nav-profile-badge" id="navWatchlistCount">0</span>
+    </a>
   </nav>
 </div>
 
@@ -61,9 +65,13 @@
       <h1>Избранное и планы к просмотру</h1>
       <p>Произведения и персоны, сохранённые для быстрого доступа. Хранятся локально на этом устройстве.</p>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div style="margin-bottom:16px;padding:12px 16px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.22);display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:#cbd5e1;flex-wrap:wrap">
+      <span>✨ Избранное объединено с вашим <strong>Профилем CINEVA</strong>: там же сохраняются оценки и тирлисты!</span>
+      <a href="profile.html#tab=watchlist" class="site-btn primary" style="font-size:12px;padding:6px 14px;text-decoration:none">Открыть в Профиле ↗</a>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px">
       <span id="watchlistStatus" style="font-size:13px;color:#9aa5bb">Загрузка коллекции…</span>
-      <button class="site-btn" id="watchlistClearBtn" type="button" style="display:none">Очистить список</button>
+      <button class="site-btn watchlist-clear-btn" id="watchlistClearBtn" type="button" style="display:none">Очистить список</button>
     </div>
     <div class="search-results" id="watchlistGrid"></div>
   </div>
@@ -108,5 +116,6 @@
 <button class="scroll-top" id="scrollTopBtn" type="button" title="Наверх" aria-label="Прокрутить наверх">↑</button>
 
 <script src="js/app.js"></script>
+<script src="js/account.js"></script>
 </body>
 </html>

@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Профиль синефила — CINEVA</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="profile">
+
+<!-- First-run Welcome Overlay -->
+<div class="api-welcome-overlay" id="apiWelcomeOverlay" role="dialog" aria-modal="true" aria-labelledby="apiWelcomeHeading" hidden>
+  <div class="api-welcome-card">
+    <div class="api-welcome-kicker">CINEVA · ПЕРВЫЙ ЗАПУСК</div>
+    <h2 id="apiWelcomeHeading">Подключить источники кино</h2>
+    <p>Ключи нужны для поиска фильмов, сериалов и людей. Введённые значения сохраняются в локальном хранилище браузера, а не в HTML-файле.</p>
+    <div class="setting-field">
+      <label for="welcomeTmdbKey">TMDB API Key (необязательно)</label>
+      <input id="welcomeTmdbKey" type="password" autocomplete="off" placeholder="Оставь пустым, чтобы пропустить TMDB">
+    </div>
+    <div class="setting-field">
+      <label for="welcomeKpKey">Кинопоиск API Key (необязательно)</label>
+      <input id="welcomeKpKey" type="password" autocomplete="off" placeholder="Оставь пустым, чтобы пропустить Кинопоиск">
+    </div>
+    <p class="api-welcome-note">Можно подключить только один источник или отказаться от обоих. Без API оценивание останется доступно в режиме ручного ввода.</p>
+    <div class="api-welcome-actions">
+      <button class="site-btn primary" id="apiWelcomeSaveBtn" type="button">Продолжить с выбранными источниками</button>
+      <button class="site-btn" id="apiWelcomeManualBtn" type="button">Продолжить без API</button>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation Header -->
+<div class="site-shell">
+  <div class="site-topbar">
+    <a href="index.html" class="site-logo" aria-label="CINEVA — главная">
+      <span class="site-logo-mark">C</span><span class="site-logo-word">CINEVA<small>CINEMA INDEX</small></span>
+    </a>
+    <form class="global-search" id="globalSearchForm" role="search">
+      <span class="search-symbol" aria-hidden="true">⌕</span>
+      <input id="globalSearchInput" type="search" maxlength="120" placeholder="Фильм, сериал, актёр, режиссёр…" autocomplete="off" aria-label="Поиск фильма, сериала или человека">
+      <button class="site-btn primary" type="submit">Найти</button>
+      <div id="liveSearchResults" class="live-search-results" hidden></div>
+    </form>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="site-btn" id="randomMovieBtn" type="button" title="Случайный популярный фильм">🎲 Случайное</button>
+      <button class="site-btn" id="settingsBtn" type="button" title="Настройки API">⚙️ Настройки API</button>
+    </div>
+  </div>
+  <nav class="site-nav" aria-label="Основная навигация">
+    <a href="index.html" class="nav-link">Обзор</a>
+    <a href="search.html" class="nav-link">Каталог и поиск</a>
+    <a href="rating.html" class="nav-link">Оценка CINEVA</a>
+    <a href="tierlist.html" class="nav-link" id="navTierlistBtn">Тирлисты</a>
+    <a href="profile.html" class="nav-link active nav-profile-link" id="navProfileBtn">
+      <span class="nav-profile-avatar-thumb" id="navProfileAvatar">👤</span>
+      <span id="navProfileName">Профиль</span>
+      <span class="nav-profile-badge" id="navWatchlistCount">0</span>
+    </a>
+  </nav>
+</div>
+
+<!-- Main Profile Page Container -->
+<main id="page-profile" class="site-page active">
+  <div class="site-container">
+
+    <!-- Profile Hero Card -->
+    <section class="profile-hero">
+      <div class="profile-hero-top">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar" id="profileAvatarDisplay">🎬</div>
+          <button type="button" class="profile-avatar-edit-btn" id="profileAvatarEditBtn" title="Сменить аватарку">✏️</button>
+        </div>
+
+        <div class="profile-main-info">
+          <div class="profile-name-row">
+            <h1 class="profile-name" id="profileUsername">Синефил CINEVA</h1>
+            <span class="profile-handle" id="profileHandle">@cinephile</span>
+            <div class="profile-rank-pill" id="profileRankPill">🎬 <span>Каннский критик</span></div>
+          </div>
+
+          <div class="profile-status-bubble">
+            <span class="status-icon">💬</span>
+            <span id="profileStatusText">Кино — это жизнь, в которой вырезали всё скучное</span>
+          </div>
+
+          <p class="profile-bio-text" id="profileBioText">Исследую авторское кино, коллекционирую редкие фильмы и делюсь авторскими тирлистами.</p>
+
+          <div class="profile-top-actions">
+            <button class="site-btn primary" id="openEditProfileBtn" type="button">✏️ Редактировать профиль</button>
+            <button class="site-btn" id="exportProfileJsonBtn" type="button" title="Скачать резервную копию аккаунта в JSON">💾 Экспорт JSON</button>
+            <button class="site-btn" id="importProfileJsonTrigger" type="button" title="Загрузить аккаунт из JSON файла">📂 Импорт JSON</button>
+            <input type="file" id="importProfileJsonInput" accept=".json,application/json" style="display:none">
+            <button class="site-btn" data-open-settings type="button">⚙️ API Ключи</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics Bar -->
+      <div class="profile-stats-bar">
+        <div class="profile-stat-box">
+          <small>В избранном</small>
+          <strong id="statWatchlistCount">0</strong>
+        </div>
+        <div class="profile-stat-box highlight">
+          <small>Оценок CINEVA</small>
+          <strong id="statRatingsCount">0</strong>
+        </div>
+        <div class="profile-stat-box">
+          <small>Создано тирлистов</small>
+          <strong id="statTierlistsCount">0</strong>
+        </div>
+        <div class="profile-stat-box">
+          <small>Средний балл</small>
+          <strong id="statAvgScore">—</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Profile Navigation Tabs -->
+    <nav class="profile-tabs" role="tablist" aria-label="Вкладки профиля">
+      <button type="button" class="profile-tab-btn active" data-profile-tab="overview">
+        <span>📌 Обзор и витрина</span>
+      </button>
+      <button type="button" class="profile-tab-btn" data-profile-tab="watchlist">
+        <span>🔖 Избранное (Watchlist)</span>
+        <span class="profile-tab-count" id="tabCountWatchlist">0</span>
+      </button>
+      <button type="button" class="profile-tab-btn" data-profile-tab="ratings">
+        <span>⭐ Мои оценки CINEVA</span>
+        <span class="profile-tab-count" id="tabCountRatings">0</span>
+      </button>
+      <button type="button" class="profile-tab-btn" data-profile-tab="tierlists">
+        <span>🏆 Мои тирлисты</span>
+        <span class="profile-tab-count" id="tabCountTierlists">0</span>
+      </button>
+      <button type="button" class="profile-tab-btn" data-profile-tab="security">
+        <span>⚙️ Резервная копия и JSON</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: OVERVIEW & SHOWCASE -->
+    <section class="profile-panel" id="tab-panel-overview">
+      <div class="profile-showcase-grid">
+        <div id="profileFavMovieContainer"></div>
+
+        <div class="notice-card" style="display:flex;flex-direction:column;justify-content:center">
+          <span style="font-size:10px;font-weight:850;letter-spacing:.16em;text-transform:uppercase;color:var(--cv-accent);margin-bottom:6px">ЛЮБИМЫЕ ЖАНРЫ</span>
+          <strong style="font-size:16px;color:#f4f6fc">Вкусовая палитра</strong>
+          <div class="genre-cloud" id="profileGenresCloud"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: WATCHLIST -->
+    <section class="profile-panel" id="tab-panel-watchlist" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:20px;margin:0 0 4px;letter-spacing:-.03em">Моя коллекция к просмотру</h2>
+          <span id="profileWatchlistStatus" style="font-size:12px;color:#9aa5bb">Загрузка коллекции…</span>
+        </div>
+        <!-- Compact, sleek clear button -->
+        <button class="watchlist-clear-btn" id="watchlistClearBtn" type="button" style="display:none">🗑️ Очистить список</button>
+      </div>
+      <div class="search-results" id="profileWatchlistGrid"></div>
+    </section>
+
+    <!-- TAB 3: RATINGS HISTORY -->
+    <section class="profile-panel" id="tab-panel-ratings" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:20px;margin:0 0 4px;letter-spacing:-.03em">История авторских оценок CINEVA</h2>
+          <span id="profileRatingsStatus" style="font-size:12px;color:#9aa5bb">Ваши оценки и шкалы ценности</span>
+        </div>
+        <a href="rating.html" class="site-btn primary" style="text-decoration:none">➕ Оценить новое кино</a>
+      </div>
+      <div class="ratings-history-grid" id="profileRatingsGrid"></div>
+    </section>
+
+    <!-- TAB 4: TIERLISTS HISTORY -->
+    <section class="profile-panel" id="tab-panel-tierlists" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="font-size:20px;margin:0 0 4px;letter-spacing:-.03em">Сохранённые тирлисты</h2>
+          <span id="profileTierlistsStatus" style="font-size:12px;color:#9aa5bb">Ранжирования фильмов, сериалов и актёров</span>
+        </div>
+        <a href="tierlist.html" class="site-btn primary" style="text-decoration:none">➕ Создать тирлист</a>
+      </div>
+      <div class="tierlist-history-grid" id="profileTierlistsGrid"></div>
+    </section>
+
+    <!-- TAB 5: SECURITY & JSON -->
+    <section class="profile-panel" id="tab-panel-security" hidden>
+      <div class="notice-card" style="line-height:1.7;margin-bottom:20px">
+        <strong style="font-size:16px;color:#f3f6fc;margin-bottom:8px">Портативный аккаунт через JSON</strong>
+        Все ваши персональные данные — никнейм, аватар, статус, избранное, история оценок CINEVA и тирлисты — хранятся прямо в локальном хранилище вашего браузера.
+        Вы можете в любой момент сохранить резервную копию аккаунта в один лёгкий `.json` файл и открыть его на любом компьютере, планшете или телефоне.
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">
+        <div class="notice-card">
+          <strong style="color:var(--cv-accent)">💾 Экспорт профиля в JSON</strong>
+          <p style="font-size:12px;color:#9ba6be;margin:8px 0 16px">Сохраняет весь аккаунт целиком со всеми коллекциями и оценками в один файл на диск.</p>
+          <button class="site-btn primary" id="exportProfileJsonBtn2" type="button" onclick="window.accountManager.exportAccountJson()">Скачать JSON файл профиля</button>
+        </div>
+
+        <div class="notice-card">
+          <strong style="color:#60a5fa">📂 Импорт аккаунта из JSON</strong>
+          <p style="font-size:12px;color:#9ba6be;margin:8px 0 16px">Восстановите свои коллекции и оценки на новом устройстве из ранее сохранённого JSON-файла.</p>
+          <label class="site-btn" style="cursor:pointer;display:inline-block;text-align:center">
+            Выбрать JSON файл
+            <input type="file" id="importProfileJsonInput2" accept=".json,application/json" style="display:none" onchange="window.accountManager.importAccountJson(this.files[0])">
+          </label>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Modal: Edit Profile Dialog -->
+<div class="settings-overlay modal-backdrop-close" id="editProfileOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="editProfileHeading">
+  <div class="settings-card" style="width:min(100%, 580px)">
+    <h2 id="editProfileHeading">Редактирование профиля</h2>
+    <p>Настройте отображение вашего аккаунта синефила. Изменения сохраняются локально.</p>
+
+    <div class="setting-field">
+      <label for="editUsernameInp">Имя / Никнейм</label>
+      <input id="editUsernameInp" type="text" maxlength="32" placeholder="Например: Кристофер или Neo">
+    </div>
+
+    <div class="setting-field">
+      <label for="editHandleInp">Уникальный ID / Handle</label>
+      <input id="editHandleInp" type="text" maxlength="24" placeholder="user_handle">
+    </div>
+
+    <div class="setting-field">
+      <label for="editStatusInp">Статус / Цитата киномана</label>
+      <input id="editStatusInp" type="text" maxlength="90" placeholder="Цитата или текущее настроение к кино">
+    </div>
+
+    <div class="setting-field">
+      <label for="editBioInp">О себе и вкусах в кино</label>
+      <textarea id="editBioInp" rows="3" style="width:100%;border:1px solid #343c52;background:#080b13;border-radius:11px;padding:12px;color:#f4f6fc;font:inherit;resize:vertical;outline:none" placeholder="Расскажите о любимых режиссёрах, жанрах или эпохах..."></textarea>
+    </div>
+
+    <div class="setting-field">
+      <label>Выбор аватара синефила</label>
+      <div class="avatar-presets-grid" id="avatarPresetsGrid"></div>
+      <div style="margin-top:10px">
+        <label class="site-btn" style="cursor:pointer;display:inline-block;font-size:11.5px">
+          📷 Загрузить свою фотографию / постер
+          <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+        </label>
+      </div>
+    </div>
+
+    <div class="setting-field">
+      <label>Любимые жанры кино</label>
+      <div class="genre-select-wrap" id="genreChoicesWrap"></div>
+    </div>
+
+    <div class="setting-field">
+      <label for="editPasswordInp">Защитный пароль аккаунта (опционально, хэширование SHA-256)</label>
+      <input id="editPasswordInp" type="password" placeholder="Оставьте пустым, если пароль не требуется">
+    </div>
+
+    <div class="settings-actions">
+      <button class="site-btn" id="closeEditProfileBtn" type="button">Отмена</button>
+      <button class="site-btn primary" id="saveProfileBtn" type="button">Сохранить профиль</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detail View (For opening movie cards directly inside Profile) -->
+<main id="page-detail" class="site-page" style="display:none">
+  <div class="site-container">
+    <button class="site-btn" id="detailBackBtn" type="button">← Назад к профилю</button>
+    <div id="detailContent" style="margin-top:18px"></div>
+  </div>
+</main>
+
+<!-- Modal: API Settings -->
+<div class="settings-overlay" id="settingsOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="settingsHeading">
+  <div class="settings-card">
+    <h2 id="settingsHeading">Настройки API</h2>
+    <p>Укажи ключи источников, которые нужно подключить. Ключи сохраняются локально.</p>
+    <div class="setting-field">
+      <label for="settingTmdbKey">API-ключ TMDB (v3 auth token / key)</label>
+      <input id="settingTmdbKey" type="text" placeholder="TMDB API v3 Key">
+    </div>
+    <div class="setting-field">
+      <label for="settingKpKey">API-ключ Кинопоиска (kinopoiskapiunofficial)</label>
+      <input id="settingKpKey" type="text" placeholder="Kinopoisk Unofficial API Key">
+    </div>
+    <div class="settings-warning">Ключи сохраняются локально в вашем браузере (LocalStorage / JSON Vault).</div>
+    <div class="api-check-panel">
+      <div class="api-check-title">Состояние источников</div>
+      <div id="apiCheckStatus" class="api-check-status" role="status" aria-live="polite">Проверь подключение, чтобы узнать, отвечают ли TMDB и Кинопоиск.</div>
+      <button class="site-btn" id="checkApiBtn" type="button">Проверить подключение</button>
+    </div>
+    <div class="settings-actions">
+      <button class="site-btn" id="settingsResetDefault" type="button">Удалить сохранённые ключи</button>
+      <button class="site-btn" id="settingsCloseBtn" type="button">Закрыть</button>
+      <button class="site-btn primary" id="settingsSaveBtn" type="button">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">CINEVA — независимый проект о кино. Данные карточек, рейтинги и изображения загружаются через API Кинопоиска и TMDB. CINEVA не связан с Кинопоиском или TMDB.</footer>
+
+<div class="toast-container" id="toastContainer"></div>
+<button class="scroll-top" id="scrollTopBtn" type="button" title="Наверх" aria-label="Прокрутить наверх">↑</button>
+
+<script src="js/app.js"></script>
+<script src="js/account.js"></script>
+</body>
+</html>

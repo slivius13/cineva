@@ -50,7 +50,11 @@
     <a href="search.html" class="nav-link">Каталог и поиск</a>
     <a href="rating.html" class="nav-link active">Оценка CINEVA</a>
     <a href="tierlist.html" class="nav-link" id="navTierlistBtn">Тирлисты</a>
-    <a href="watchlist.html" class="nav-link" id="navWatchlistBtn">Избранное (<span id="watchlistCount">0</span>)</a>
+    <a href="profile.html" class="nav-link nav-profile-link" id="navProfileBtn">
+      <span class="nav-profile-avatar-thumb" id="navProfileAvatar">👤</span>
+      <span id="navProfileName">Профиль</span>
+      <span class="nav-profile-badge" id="navWatchlistCount">0</span>
+    </a>
   </nav>
 </div>
 
@@ -250,6 +254,7 @@
 
  <div class="actions">
   <button class="primary" id="saveImage">Скачать PNG</button>
+  <button class="site-btn" id="saveRatingToProfileBtn" type="button" title="Сохранить эту оценку в личный профиль">💾 В профиль</button>
   <button class="rating-share-btn" id="ratingShareBtn" type="button" title="Поделиться ссылкой на оценку этого произведения">🔗 Поделиться оценкой</button>
   <button id="reset">Сбросить</button>
  </div>
@@ -298,6 +303,7 @@
 <button class="scroll-top" id="scrollTopBtn" type="button" title="Наверх" aria-label="Прокрутить наверх">↑</button>
 
 <script src="js/app.js"></script>
+<script src="js/account.js"></script>
 <script src="js/rating.js"></script>
 </body>
 </html>

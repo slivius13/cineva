@@ -194,6 +194,13 @@
   function saveWatchlist(list) {
     const arr = Array.isArray(list) ? list : [];
     setStoredValue('cineva_watchlist', JSON.stringify(arr));
+    if (window.CINEVA_ACCOUNT && typeof window.CINEVA_ACCOUNT.getAccount === 'function' && typeof window.CINEVA_ACCOUNT.saveAccount === 'function') {
+      try {
+        const acc = window.CINEVA_ACCOUNT.getAccount();
+        acc.watchlist = arr;
+        window.CINEVA_ACCOUNT.saveAccount(acc);
+      } catch (_) {}
+    }
     updateWatchlistCount();
     return true;
   }
@@ -253,6 +260,11 @@
     const list = getWatchlist();
     const badge = byId('watchlistCount');
     if (badge) badge.textContent = String(list.length);
+    const navBadge = byId('navWatchlistCount');
+    if (navBadge) navBadge.textContent = String(list.length);
+    if (window.CINEVA_ACCOUNT && typeof window.CINEVA_ACCOUNT.updateNavProfileBadge === 'function') {
+      window.CINEVA_ACCOUNT.updateNavProfileBadge();
+    }
   }
 
   function updateWatchlistUI() {
