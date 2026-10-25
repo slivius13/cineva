@@ -599,7 +599,20 @@
     if (reviewerOverlay) reviewerOverlay.hidden = true;
   }
 
+  function closeReviewerOverlay() {
+    if (reviewerOverlay) reviewerOverlay.hidden = true;
+  }
+
   byId('reviewerSave')?.addEventListener('click', saveReviewerName);
+  byId('reviewerCancelBtn')?.addEventListener('click', closeReviewerOverlay);
+  reviewerOverlay?.addEventListener('click', e => {
+    if (e.target === reviewerOverlay) closeReviewerOverlay();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && reviewerOverlay && !reviewerOverlay.hidden) {
+      closeReviewerOverlay();
+    }
+  });
   byId('reviewerNameInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveReviewerName(); });
   byId('reviewerEdit')?.addEventListener('click', () => {
     if (byId('reviewerNameInput')) byId('reviewerNameInput').value = reviewerName;

@@ -60,7 +60,15 @@
 
 <section id="page-rating" class="site-page rating-page active">
 <div class="reviewer-overlay" id="reviewerOverlay" role="dialog" aria-modal="true" aria-labelledby="reviewerHeading" hidden>
- <div class="reviewer-box"><h2 id="reviewerHeading">Кто рецензирует?</h2><p>Имя будет указано внизу экспортированной карточки рядом с датой.</p><input id="reviewerNameInput" type="text" maxlength="40" placeholder="Имя или псевдоним" autocomplete="name"><button class="primary" id="reviewerSave" type="button">Продолжить</button></div>
+ <div class="reviewer-box">
+   <h2 id="reviewerHeading">Кто рецензирует?</h2>
+   <p>Имя будет указано внизу экспортированной карточки рядом с датой.</p>
+   <input id="reviewerNameInput" type="text" maxlength="40" placeholder="Имя или псевдоним" autocomplete="name">
+   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+     <button class="site-btn" id="reviewerCancelBtn" type="button">Отмена</button>
+     <button class="primary" id="reviewerSave" type="button">Продолжить</button>
+   </div>
+ </div>
 </div>
 <div class="app">
 <header>

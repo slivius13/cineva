@@ -21,6 +21,7 @@
   ];
 
   let activeTierKind = 'movies'; // 'movies' | 'actors'
+  let selectedItemForMove = null;
 
   let tierStores = {
     movies: {
@@ -476,16 +477,61 @@
       return;
     }
 
-    // Click poster -> Open Details
+    // Click poster -> Tap to select and move between rows (Touch & Click friendly)
     const tierCard = event.target.closest('.tier-item');
     const delBtn = event.target.closest('.tier-item-del');
     if (tierCard && !delBtn) {
-      const id = tierCard.dataset.id;
-      const type = tierCard.dataset.type || (activeTierKind === 'actors' ? 'person' : 'movie');
-      const source = tierCard.dataset.source || 'tmdb';
+      const zone = tierCard.dataset.zone;
+      const index = parseInt(tierCard.dataset.index, 10);
+      const data = getActiveTierData();
+      let item = null;
+      if (zone === 'unranked') item = data.unranked[index];
+      else {
+        const row = data.rows.find(r => r.id === zone);
+        if (row) item = row.items[index];
+      }
+      if (!item) return;
 
-      // Route to search.html with detail link
-      window.location.href = `search.html?open=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}${source === 'kinopoisk' ? '&source=kinopoisk' : ''}`;
+      if (selectedItemForMove && selectedItemForMove.zone === zone && selectedItemForMove.index === index) {
+        selectedItemForMove = null;
+        document.querySelectorAll('.tier-item').forEach(c => c.classList.remove('selected-card'));
+        return;
+      }
+
+      selectedItemForMove = { zone, index, item };
+      document.querySelectorAll('.tier-item').forEach(c => c.classList.remove('selected-card'));
+      tierCard.classList.add('selected-card');
+      showToast(`Выбрано: «${item.title || item.name}». Нажмите на ряд для перемещения.`, 'info', 2000);
+      return;
+    }
+
+    // Tap on row dropzone to place selected card
+    const targetDropzone = event.target.closest('.tier-dropzone');
+    if (targetDropzone && selectedItemForMove) {
+      const targetZone = targetDropzone.dataset.zone === 'unranked' ? 'unranked' : targetDropzone.dataset.rowId;
+      const curData = getActiveTierData();
+      const itemToMove = selectedItemForMove.item;
+
+      // Remove from source
+      if (selectedItemForMove.zone === 'unranked') {
+        curData.unranked.splice(selectedItemForMove.index, 1);
+      } else {
+        const srcRow = curData.rows.find(r => r.id === selectedItemForMove.zone);
+        if (srcRow) srcRow.items.splice(selectedItemForMove.index, 1);
+      }
+
+      // Add to target
+      if (targetZone === 'unranked') {
+        curData.unranked.push(itemToMove);
+      } else {
+        const tgtRow = curData.rows.find(r => r.id === targetZone);
+        if (tgtRow) tgtRow.items.push(itemToMove);
+      }
+
+      selectedItemForMove = null;
+      saveTierListStorage();
+      renderTierBoard();
+      showToast(`«${itemToMove.title || itemToMove.name}» перемещён!`, 'success');
       return;
     }
 
@@ -1095,6 +1141,16 @@
   renderTierBoard();
   checkSharedTierFromUrl();
   window.addEventListener('hashchange', checkSharedTierFromUrl);
+
+  document.addEventListener('dblclick', event => {
+    const tierCard = event.target.closest('.tier-item');
+    if (tierCard) {
+      const id = tierCard.dataset.id;
+      const type = tierCard.dataset.type || (activeTierKind === 'actors' ? 'person' : 'movie');
+      const source = tierCard.dataset.source || 'tmdb';
+      window.location.href = `search.html?open=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}${source === 'kinopoisk' ? '&source=kinopoisk' : ''}`;
+    }
+  });
 
   window.renderTierBoard = renderTierBoard;
   window.exportTierListPng = exportTierListPng;

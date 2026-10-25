@@ -447,53 +447,61 @@
     return best;
   }
 
-  const CINEMA_DICTIONARY = [
-    { term: 'интерстеллар', match: ['интерстелар', 'интерстеляр', 'интерстелр', 'интерстелер', 'interstellar'] },
-    { term: 'оппенгеймер', match: ['опенгеймер', 'опенхаймер', 'оппенхаймер', 'oppenheimer'] },
-    { term: 'побег из шоушенка', match: ['побег из шаушенка', 'шоушенк', 'шаушенк'] },
-    { term: 'криминальное чтиво', match: ['криминалное чтиво', 'чтиво', 'pulp fiction'] },
-    { term: 'бойцовский клуб', match: ['бойцовски клуб', 'бойцовскии клуб', 'боицовский клуб', 'fight club'] },
-    { term: 'властелин колец', match: ['властилин колец', 'властилин', 'lord of the rings'] },
-    { term: 'темный рыцарь', match: ['тёмный рыцарь', 'темныи рыцарь', 'dark knight'] },
-    { term: 'игра престолов', match: ['игр престолов', 'игра престол', 'game of thrones'] },
-    { term: 'во все тяжкие', match: ['во все тяшкие', 'тяжкие', 'breaking bad'] },
-    { term: 'джентльмены', match: ['джентельмены', 'джентельмен', 'gentlemen'] },
-    { term: 'остров проклятых', match: ['остров проклятых', 'остров проклятих', 'shutter island'] },
-    { term: 'начало', match: ['начяло', 'инсепшн', 'inception'] },
-    { term: 'матрица', match: ['матритца', 'matrix'] },
-    { term: 'кристофер нолан', match: ['кристофер нолон', 'нолан', 'nolan', 'christopher nolan'] },
-    { term: 'квентин тарантино', match: ['квентин торантино', 'тарантино', 'tarantino'] },
-    { term: 'леонардо ди каприо', match: ['леонардо дикаприо', 'дикаприо', 'декаприо', 'dicaprio'] },
-    { term: 'стивен спилберг', match: ['спилберг', 'spielberg'] },
-    { term: 'дэвид финчер', match: ['давид финчер', 'финчер', 'fincher'] },
-    { term: 'гарри поттер', match: ['гарри потер', 'гари потер', 'гарри поттер', 'harry potter'] },
-    { term: 'человек паук', match: ['человек-паук', 'человек павук', 'спайдермен', 'spiderman'] },
-    { term: 'мстители', match: ['мститили', 'avengers'] },
-    { term: 'зеленая миля', match: ['зелёная миля', 'зеленая мила', 'green mile'] },
-    { term: '1+1', match: ['неприкасаемые', 'intouchables'] }
-  ];
+  // ==========================================
+  // ALGORITHMIC TYPO & STRING SIMILARITY (ZERO HARDCODED DICTIONARIES)
+  // ==========================================
+  function damerauLevenshtein(a, b) {
+    const s1 = String(a || '');
+    const s2 = String(b || '');
+    const len1 = s1.length;
+    const len2 = s2.length;
+    if (!len1) return len2;
+    if (!len2) return len1;
 
-  function detectGoogleCorrection(query) {
-    const raw = String(query || '').trim();
-    if (raw.length < 2) return null;
-    const flipped = switchKeyboardLayout(raw).trim();
-    const isFlipped = flipped && normalizeSearchText(flipped) !== normalizeSearchText(raw);
+    const d = [];
+    for (let i = 0; i <= len1; i++) d[i] = [i];
+    for (let j = 0; j <= len2; j++) d[0][j] = j;
 
-    if (isFlipped && (/[a-z]/i.test(raw) && !/[а-яё]/i.test(raw))) {
-      return { type: 'layout', corrected: flipped, original: raw };
-    }
-
-    const norm = normalizeSearchText(raw);
-    for (const entry of CINEMA_DICTIONARY) {
-      if (entry.term === norm) continue;
-      if (entry.match.some(m => normalizeSearchText(m) === norm || norm.includes(normalizeSearchText(m)))) {
-        return { type: 'spelling', corrected: entry.term, original: raw };
-      }
-      if (norm.length >= 6 && entry.term.length >= 6 && Math.abs(norm.length - entry.term.length) <= 2) {
-        if (titleMatchScore(norm, { nameRu: entry.term }) >= 0.82) {
-          return { type: 'typo', corrected: entry.term, original: raw };
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+        d[i][j] = Math.min(
+          d[i - 1][j] + 1,       // deletion
+          d[i][j - 1] + 1,       // insertion
+          d[i - 1][j - 1] + cost  // substitution
+        );
+        if (i > 1 && j > 1 && s1[i - 1] === s2[j - 2] && s1[i - 2] === s2[j - 1]) {
+          d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1); // transposition
         }
       }
+    }
+    return d[len1][len2];
+  }
+
+  function calcStringSimilarity(strA, strB) {
+    const a = normalizeSearchText(strA);
+    const b = normalizeSearchText(strB);
+    if (!a || !b) return 0;
+    if (a === b) return 1.0;
+    if (a.startsWith(b) || b.startsWith(a)) return 0.92;
+    if (a.includes(b) || b.includes(a)) return 0.85;
+
+    const maxLen = Math.max(a.length, b.length);
+    if (maxLen === 0) return 1.0;
+    const dist = damerauLevenshtein(a, b);
+    return Math.max(0, 1 - dist / maxLen);
+  }
+
+  function detectLayoutSuggestion(rawQuery) {
+    const raw = String(rawQuery || '').trim();
+    if (raw.length < 2) return null;
+    const flipped = switchKeyboardLayout(raw).trim();
+    if (!flipped || normalizeSearchText(flipped) === normalizeSearchText(raw)) return null;
+
+    const hasLatin = /[a-z]/i.test(raw);
+    const hasCyrillic = /[а-яё]/i.test(raw);
+    if (hasLatin && !hasCyrillic) {
+      return { type: 'layout', corrected: flipped, original: raw };
     }
     return null;
   }
@@ -542,18 +550,27 @@
     return bestScore >= 0.78 ? best : null;
   }
 
-  async function searchUnifiedMedia(rawQuery, mode = 'multi', signal) {
+  async function searchUnifiedMedia(rawQuery, mode = 'multi', signal, forceOriginal = false) {
     const query = String(rawQuery || '').trim().replace(/\s+/g, ' ');
-    if (query.length < 2) return { results: [], suggestion: null };
+    if (query.length < 2) return { results: [], suggestion: null, wasAutoCorrected: false };
 
-    const cacheKey = `${mode}:${query.toLowerCase()}`;
+    const cacheKey = `${mode}:${query.toLowerCase()}:${forceOriginal ? '1' : '0'}`;
     if (searchCache.has(cacheKey)) {
       return searchCache.get(cacheKey);
     }
 
-    const suggestion = detectGoogleCorrection(query);
-    let effectiveQuery = (suggestion && suggestion.type === 'layout') ? suggestion.corrected : query;
-    let wasAutoCorrected = Boolean(suggestion && suggestion.type === 'layout');
+    let suggestion = null;
+    let wasAutoCorrected = false;
+    let effectiveQuery = query;
+
+    if (!forceOriginal) {
+      const layoutSug = detectLayoutSuggestion(query);
+      if (layoutSug) {
+        effectiveQuery = layoutSug.corrected;
+        wasAutoCorrected = true;
+        suggestion = layoutSug;
+      }
+    }
 
     let tmdbResults = [], kp = { results: [], error: null };
     try {
@@ -562,12 +579,80 @@
         try { kp = await getKpMatches(effectiveQuery, mode, signal); } catch (_) {}
       }
 
-      if (!tmdbResults.length && !kp.results.length && suggestion && effectiveQuery === query) {
-        effectiveQuery = suggestion.corrected;
-        wasAutoCorrected = true;
-        try { tmdbResults = await searchTmdbGlobal(effectiveQuery, mode, signal); } catch (_) {}
-        if (mode !== 'person') {
-          try { kp = await getKpMatches(effectiveQuery, mode, signal); } catch (_) {}
+      // If initial search had zero results and forceOriginal is false: Algorithmic Fuzzy Recovery
+      if (!tmdbResults.length && !kp.results.length && !forceOriginal) {
+        // Step 1: try layout flip if not tried yet
+        const flipped = switchKeyboardLayout(query).trim();
+        if (flipped && flipped !== query && flipped !== effectiveQuery) {
+          try { tmdbResults = await searchTmdbGlobal(flipped, mode, signal); } catch (_) {}
+          if (mode !== 'person') {
+            try { kp = await getKpMatches(flipped, mode, signal); } catch (_) {}
+          }
+          if (tmdbResults.length || kp.results.length) {
+            suggestion = { type: 'layout', corrected: flipped, original: query };
+            wasAutoCorrected = true;
+            effectiveQuery = flipped;
+          }
+        }
+
+        // Step 2: Algorithmic Token & Prefix Stem Relaxation
+        if (!tmdbResults.length && !kp.results.length) {
+          const words = query.split(/\s+/).filter(w => w.length >= 3);
+          let relaxedQuery = '';
+          if (words.length > 1) {
+            // Pick longest word
+            relaxedQuery = [...words].sort((a, b) => b.length - a.length)[0];
+          } else if (query.length >= 5) {
+            // Prefix stem (e.g. "интерстеляр" -> "интерстел")
+            relaxedQuery = query.slice(0, Math.max(4, query.length - 2));
+          }
+
+          if (relaxedQuery && relaxedQuery.length >= 3) {
+            let relaxedTmdb = [], relaxedKp = { results: [] };
+            try { relaxedTmdb = await searchTmdbGlobal(relaxedQuery, mode, signal); } catch (_) {}
+            if (mode !== 'person') {
+              try { relaxedKp = await getKpMatches(relaxedQuery, mode, signal); } catch (_) {}
+            }
+            const allCandidates = [...relaxedTmdb, ...relaxedKp.results];
+
+            // Evaluate candidates against original query using Damerau-Levenshtein
+            let bestCand = null, bestSim = 0;
+            for (const cand of allCandidates) {
+              const titles = [cand.title, cand.name, cand.nameRu, cand.nameEn, cand.original_title].filter(Boolean);
+              for (const t of titles) {
+                const sim = calcStringSimilarity(query, t);
+                if (sim > bestSim) {
+                  bestSim = sim;
+                  bestCand = t;
+                }
+              }
+            }
+
+            if (bestSim >= 0.78 && bestCand) {
+              // Found algorithmic typo match! Re-search best candidate
+              suggestion = { type: 'typo', corrected: bestCand, original: query };
+              wasAutoCorrected = true;
+              try { tmdbResults = await searchTmdbGlobal(bestCand, mode, signal); } catch (_) {}
+              if (mode !== 'person') {
+                try { kp = await getKpMatches(bestCand, mode, signal); } catch (_) {}
+              }
+            }
+          }
+        }
+      }
+
+      // Step 3: If results exist, check if top results suggest a minor typo correction
+      if ((tmdbResults.length || kp.results.length) && !wasAutoCorrected && !forceOriginal) {
+        const topCandidates = [...tmdbResults, ...kp.results].slice(0, 6);
+        for (const cand of topCandidates) {
+          const candTitle = titleName(cand);
+          if (candTitle && normalizeSearchText(candTitle) !== normalizeSearchText(query)) {
+            const sim = calcStringSimilarity(query, candTitle);
+            if (sim >= 0.82 && sim < 1.0) {
+              suggestion = { type: 'typo', corrected: candTitle, original: query };
+              break;
+            }
+          }
         }
       }
 
@@ -602,7 +687,7 @@
       searchCache.set(cacheKey, resObj);
       return resObj;
     } catch (_) {
-      return { results: [], suggestion: null };
+      return { results: [], suggestion: null, wasAutoCorrected: false };
     }
   }
 
@@ -885,7 +970,7 @@
       window.history.replaceState(null, '', u.toString());
     } catch (_) {}
 
-    const { results, suggestion, wasAutoCorrected } = await searchUnifiedMedia(query, mode);
+    const { results, suggestion, wasAutoCorrected } = await searchUnifiedMedia(query, mode, undefined, forceOriginal);
     if (token !== searchCounter) return;
 
     lastSearchItems = results;
@@ -1023,6 +1108,72 @@
     }
   }
 
+  async function openKinopoiskPerson(id) {
+    if (!id) return;
+    if (!byId('page-detail')) {
+      window.location.href = `search.html?open=person&id=${encodeURIComponent(id)}&source=kinopoisk`;
+      return;
+    }
+
+    showDetailContainer();
+    byId('detailContent').innerHTML = '<div class="notice-card"><strong>Загружаем профиль создателя…</strong>Получаем данные из Кинопоиска.</div>';
+
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set('open', 'person');
+      u.searchParams.set('id', id);
+      u.searchParams.set('source', 'kinopoisk');
+      window.history.pushState(null, '', u.toString());
+    } catch (_) {}
+
+    try {
+      const p = await kpFetch('/v1/staff/' + encodeURIComponent(id));
+      currentDetail = { kind: 'person', id: String(id), source: 'kinopoisk', details: p };
+      const name = p.nameRu || p.nameEn || 'Без имени';
+      const photo = p.posterUrl || '';
+      const facts = [p.profession, p.birthday ? `Родился: ${p.birthday}` : '', p.birthplace, p.death ? `Умер: ${p.death}` : ''].filter(Boolean);
+      const rawFilms = p.films || [];
+      const seen = new Set();
+      const uniqueFilms = [];
+      for (const f of rawFilms) {
+        if (!f.filmId || seen.has(f.filmId)) continue;
+        seen.add(f.filmId);
+        uniqueFilms.push({
+          id: f.filmId,
+          title: f.nameRu || f.nameEn || 'Без названия',
+          year: '',
+          posterUrl: '',
+          ratingKinopoisk: Number(f.rating || 0),
+          source: 'kinopoisk',
+          media_type: 'movie'
+        });
+      }
+      const topFilms = uniqueFilms.slice(0, 24);
+
+      byId('detailContent').innerHTML = `
+        <section class="person-hero">
+          ${photo ? `<img class="person-profile" src="${safe(photo)}" alt="${safe(name)}">` : '<div class="person-profile" style="display:grid;place-items:center;color:#8c96ac">CINEVA</div>'}
+          <div>
+            <div class="eyebrow">CINEVA · КИНОПОИСК · ПЕРСОНА</div>
+            <h1 style="font-size:clamp(30px,4vw,52px);letter-spacing:-.05em;margin:10px 0">${safe(name)}</h1>
+            <div class="person-facts">${facts.map(f => `<span>${safe(f)}</span>`).join('')}</div>
+            <p class="person-bio">${p.facts && p.facts.length ? safe(p.facts[0]) : 'Профиль персоны из базы Кинопоиска. Ниже представлен список кинопроектов.'}</p>
+          </div>
+        </section>
+        <section class="detail-section">
+          <h2>Фильмография</h2>
+          <p style="font-size:11px;color:#8d98af;margin:-7px 0 15px">Проекты с участием персоны из базы Кинопоиска.</p>
+          <div class="filmography">
+            ${topFilms.length ? topFilms.map(w => posterCard(w, 'movie')).join('') : '<div class="notice-card" style="grid-column:1/-1">Фильмография пока недоступна.</div>'}
+          </div>
+        </section>
+        <p style="font-size:10px;color:#6f7a92;line-height:1.7">Данные персоны предоставлены Кинопоиском. CINEVA не связан с правообладателями.</p>
+      `;
+    } catch (error) {
+      byId('detailContent').innerHTML = `<div class="notice-card"><strong>Не удалось открыть профиль</strong>${safe(error.message)}<br><button class="site-btn primary" style="margin-top:12px" data-open-settings>Проверить настройки API</button></div>`;
+    }
+  }
+
   async function openPerson(id) {
     if (!byId('page-detail')) {
       window.location.href = `search.html?open=person&id=${encodeURIComponent(id)}`;
@@ -1133,6 +1284,72 @@
     }
   }
 
+  async function openKinopoiskPerson(id) {
+    if (!id) return;
+    if (!byId('page-detail')) {
+      window.location.href = `search.html?open=person&id=${encodeURIComponent(id)}&source=kinopoisk`;
+      return;
+    }
+
+    showDetailContainer();
+    byId('detailContent').innerHTML = '<div class="notice-card"><strong>Загружаем профиль создателя…</strong>Получаем данные из Кинопоиска.</div>';
+
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set('open', 'person');
+      u.searchParams.set('id', id);
+      u.searchParams.set('source', 'kinopoisk');
+      window.history.pushState(null, '', u.toString());
+    } catch (_) {}
+
+    try {
+      const p = await kpFetch('/v1/staff/' + encodeURIComponent(id));
+      currentDetail = { kind: 'person', id: String(id), source: 'kinopoisk', details: p };
+      const name = p.nameRu || p.nameEn || 'Без имени';
+      const photo = p.posterUrl || '';
+      const facts = [p.profession, p.birthday ? `Родился: ${p.birthday}` : '', p.birthplace, p.death ? `Умер: ${p.death}` : ''].filter(Boolean);
+      const rawFilms = p.films || [];
+      const seen = new Set();
+      const uniqueFilms = [];
+      for (const f of rawFilms) {
+        if (!f.filmId || seen.has(f.filmId)) continue;
+        seen.add(f.filmId);
+        uniqueFilms.push({
+          id: f.filmId,
+          title: f.nameRu || f.nameEn || 'Без названия',
+          year: '',
+          posterUrl: '',
+          ratingKinopoisk: Number(f.rating || 0),
+          source: 'kinopoisk',
+          media_type: 'movie'
+        });
+      }
+      const topFilms = uniqueFilms.slice(0, 24);
+
+      byId('detailContent').innerHTML = `
+        <section class="person-hero">
+          ${photo ? `<img class="person-profile" src="${safe(photo)}" alt="${safe(name)}">` : '<div class="person-profile" style="display:grid;place-items:center;color:#8c96ac">CINEVA</div>'}
+          <div>
+            <div class="eyebrow">CINEVA · КИНОПОИСК · ПЕРСОНА</div>
+            <h1 style="font-size:clamp(30px,4vw,52px);letter-spacing:-.05em;margin:10px 0">${safe(name)}</h1>
+            <div class="person-facts">${facts.map(f => `<span>${safe(f)}</span>`).join('')}</div>
+            <p class="person-bio">${p.facts && p.facts.length ? safe(p.facts[0]) : 'Профиль персоны из базы Кинопоиска. Ниже представлен список кинопроектов.'}</p>
+          </div>
+        </section>
+        <section class="detail-section">
+          <h2>Фильмография</h2>
+          <p style="font-size:11px;color:#8d98af;margin:-7px 0 15px">Проекты с участием персоны из базы Кинопоиска.</p>
+          <div class="filmography">
+            ${topFilms.length ? topFilms.map(w => posterCard(w, 'movie')).join('') : '<div class="notice-card" style="grid-column:1/-1">Фильмография пока недоступна.</div>'}
+          </div>
+        </section>
+        <p style="font-size:10px;color:#6f7a92;line-height:1.7">Данные персоны предоставлены Кинопоиском. CINEVA не связан с правообладателями.</p>
+      `;
+    } catch (error) {
+      byId('detailContent').innerHTML = `<div class="notice-card"><strong>Не удалось открыть профиль</strong>${safe(error.message)}<br><button class="site-btn primary" style="margin-top:12px" data-open-settings>Проверить настройки API</button></div>`;
+    }
+  }
+
   function openEntity(type, id) {
     if (!id) return;
     if (type === 'person') openPerson(id);
@@ -1157,7 +1374,10 @@
       const searchMode = params.get('mode') || 'multi';
 
       if (openType && openId) {
-        if (source === 'kinopoisk') openKinopoiskTitle(openId);
+        if (source === 'kinopoisk') {
+          if (openType === 'person') openKinopoiskPerson(openId);
+          else openKinopoiskTitle(openId);
+        }
         else if (openType === 'person') openPerson(openId);
         else openTitle(openId, openType);
       } else if (searchQuery && currentPageKey === 'search') {
@@ -1300,6 +1520,7 @@
       saveApiKeys(tmdbVal, kpVal);
       hideSettings();
       if (currentPageKey === 'home') loadHomeShelves(true);
+      if (currentPageKey === 'search') runGlobalSearch(lastSearchQuery || byId('pageSearchInput')?.value || '');
       showToast(tmdbVal || kpVal ? 'Настройки API сохранены!' : 'API отключены. Оценивание доступно вручную.', 'success');
       return;
     }
@@ -1457,6 +1678,14 @@
       return;
     }
 
+    // Kinopoisk staff member click
+    const kpPersonBtn = event.target.closest('[data-open-kp-person]');
+    if (kpPersonBtn) {
+      const pid = kpPersonBtn.dataset.openKpPerson;
+      if (pid) openKinopoiskPerson(pid);
+      return;
+    }
+
     // 13. Back button from detail card
     if (event.target.closest('#detailBackBtn')) {
       closeDetail();
@@ -1470,7 +1699,63 @@
     globalSearchForm.addEventListener('submit', event => {
       event.preventDefault();
       const q = byId('globalSearchInput')?.value.trim() || '';
+      const live = byId('liveSearchResults');
+      if (live) live.hidden = true;
       runGlobalSearch(q, activeSearchMode);
+    });
+  }
+
+  const globalSearchInput = byId('globalSearchInput');
+  const liveResultsContainer = byId('liveSearchResults');
+  let topbarLiveTimer = null;
+
+  if (globalSearchInput && liveResultsContainer) {
+    globalSearchInput.addEventListener('input', () => {
+      clearTimeout(topbarLiveTimer);
+      const q = globalSearchInput.value.trim();
+      if (q.length < 2) {
+        liveResultsContainer.hidden = true;
+        liveResultsContainer.innerHTML = '';
+        return;
+      }
+      topbarLiveTimer = setTimeout(async () => {
+        try {
+          const { results } = await searchUnifiedMedia(q, 'multi');
+          if (!results || !results.length) {
+            liveResultsContainer.innerHTML = '<div style="font-size:11.5px;color:#8591ab;padding:12px;text-align:center">Ничего не найдено (Нажмите Enter для поиска)</div>';
+            liveResultsContainer.hidden = false;
+            return;
+          }
+          liveResultsContainer.innerHTML = results.slice(0, 5).map(item => {
+            const isPerson = item.media_type === 'person';
+            const img = item.poster || item.posterUrl || (isPerson ? (item.profile_path ? posterUrl(item.profile_path, 'w185') : '') : (item.poster_path ? posterUrl(item.poster_path, 'w185') : ''));
+            const title = item.title || item.name || item.nameRu || 'Без названия';
+            const year = isPerson ? (item.known_for_department || 'Кино') : (item.year || releaseYear(item) || '');
+            const kpAttr = item.source === 'kinopoisk' ? `data-open-source="kinopoisk" data-kp-id="${safe(item.id)}"` : '';
+            return `
+              <div class="live-search-item" data-open-type="${safe(item.media_type || 'movie')}" data-open-id="${safe(item.id)}" ${kpAttr} role="button" tabindex="0" style="display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;border-radius:10px;transition:background .15s ease">
+                ${img ? `<img src="${safe(img)}" style="width:30px;height:44px;border-radius:6px;object-fit:cover;flex:0 0 30px" alt="">` : '<div style="width:30px;height:44px;border-radius:6px;background:#171c2b;display:grid;place-items:center;font-size:9px;color:#7886a0;flex:0 0 30px">CINEVA</div>'}
+                <div style="min-width:0;flex:1">
+                  <strong style="display:block;font-size:12.5px;color:#f3f6fc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${safe(title)}</strong>
+                  <span style="font-size:10.5px;color:#8c98af">${safe(year)} · ${isPerson ? 'Персона' : (item.media_type === 'tv' ? 'Сериал' : 'Фильм')}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+          liveResultsContainer.hidden = false;
+        } catch (_) {}
+      }, 250);
+    });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#globalSearchForm')) {
+        liveResultsContainer.hidden = true;
+      }
+    });
+    globalSearchInput.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        liveResultsContainer.hidden = true;
+      }
     });
   }
 

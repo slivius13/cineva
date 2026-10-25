@@ -1626,4 +1626,21 @@ button,input{font:inherit}
   color: #fbbf24;
 }
 
+/* Tier Item Selection for Touch / Tap-to-move */
+.tier-item.selected-card {
+  outline: 3px solid var(--cv-accent) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 20px rgba(197, 255, 101, 0.5) !important;
+  transform: scale(1.06) !important;
+  z-index: 10;
+}
+
+/* Live Search Items */
+.live-search-item:hover,
+.live-search-item:focus {
+  background: rgba(197, 255, 101, 0.12) !important;
+  outline: none;
+}
+
+
 
