@@ -687,6 +687,17 @@
       setArtworkColors(byId('posterImg'));
     }
 
+    // Restore saved criteria sliders from profile if available
+    if (item.criteria && typeof item.criteria === 'object') {
+      Object.entries(item.criteria).forEach(([k, v]) => {
+        const el = byId(k);
+        if (el) {
+          el.value = v;
+          try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+        }
+      });
+    }
+
     if (byId('editorDetails')) byId('editorDetails').hidden = false;
     if (byId('resultCard')) byId('resultCard').hidden = false;
     document.querySelector('#page-rating .layout')?.classList.add('has-preview');
@@ -737,12 +748,24 @@
       const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
       const shareUrl = `${window.location.origin}${window.location.pathname}#rate=${encodeURIComponent(b64)}`;
 
-      if (navigator.clipboard) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareUrl).then(() => {
           showToast('🔗 Ссылка на оценку скопирована в буфер обмена!', 'success');
-        }).catch(() => prompt('Скопируйте ссылку на оценку:', shareUrl));
+        }).catch(() => {
+          if (typeof window.showModalPrompt === 'function') {
+            window.showModalPrompt({ title: 'Ссылка на оценку', message: 'Скопируйте ссылку на карточку CINEVA:', value: shareUrl, readonly: true });
+          } else {
+            showToast('Ссылка сформирована в адресной строке', 'info');
+            window.location.hash = `#rate=${encodeURIComponent(b64)}`;
+          }
+        });
       } else {
-        prompt('Скопируйте ссылку на оценку:', shareUrl);
+        if (typeof window.showModalPrompt === 'function') {
+          window.showModalPrompt({ title: 'Ссылка на оценку', message: 'Скопируйте ссылку на карточку CINEVA:', value: shareUrl, readonly: true });
+        } else {
+          showToast('Ссылка сформирована в адресной строке', 'info');
+          window.location.hash = `#rate=${encodeURIComponent(b64)}`;
+        }
       }
     } catch (e) {
       showToast('Ошибка при формировании ссылки: ' + e.message, 'error');
@@ -1196,7 +1219,7 @@
       link.click();
       showToast('Коллекционная карточка успешно сохранена в PNG!', 'success');
     } catch (error) {
-      alert('Не удалось создать PNG: ' + error.message);
+      showToast('Не удалось создать PNG: ' + error.message, 'error');
     } finally {
       if (button) { button.disabled = false; button.textContent = 'Скачать PNG'; }
     }
@@ -1209,12 +1232,16 @@
   // INCOMING TRANSITIONS & STARTUP
   // ==========================================
   // 1. Check incoming sessionStorage item from other pages ("⭐ Оценить в CINEVA ↗")
+  let itemLoadedFromSession = false;
   try {
     const pendingRate = sessionStorage.getItem('cineva_rate_item');
     if (pendingRate) {
       sessionStorage.removeItem('cineva_rate_item');
       const pItem = JSON.parse(pendingRate);
-      if (pItem) loadRatingItem(pItem);
+      if (pItem) {
+        loadRatingItem(pItem);
+        itemLoadedFromSession = true;
+      }
     }
   } catch (_) {}
 
@@ -1224,7 +1251,7 @@
     const rateId = params.get('rateId');
     const rateType = params.get('type') || 'movie';
     const rateSource = params.get('source') || 'tmdb';
-    if (rateId && !sessionStorage.getItem('cineva_rate_item')) {
+    if (rateId && !itemLoadedFromSession) {
       if (rateSource === 'kinopoisk') {
         kpFetch('/v2.2/films/' + encodeURIComponent(rateId)).then(d => {
           loadRatingItem({

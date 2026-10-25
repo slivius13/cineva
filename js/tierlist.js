@@ -596,24 +596,48 @@
     // Clear pool
     if (event.target.closest('#tierClearPoolBtn')) {
       const data = getActiveTierData();
-      if (data.unranked.length && confirm('Очистить список нераспределённых элементов?')) {
+      if (!data.unranked.length) return;
+      const doClear = () => {
         data.unranked = [];
         saveTierListStorage();
         renderTierBoard();
         showToast('Пул нераспределённых элементов очищен', 'info');
+      };
+      if (typeof window.showConfirmModal === 'function') {
+        window.showConfirmModal({
+          title: 'Очистить пул?',
+          message: 'Все нераспределённые по рядам постеры будут удалены из пула текущего тирлиста.',
+          confirmText: 'Очистить пул',
+          danger: true,
+          onConfirm: doClear
+        });
+      } else if (confirm('Очистить список нераспределённых элементов?')) {
+        doClear();
       }
       return;
     }
 
     // Reset tierlist
     if (event.target.closest('#tierResetBtn')) {
-      if (confirm(`Сбросить тирлист ${activeTierKind === 'actors' ? 'актёров' : 'фильмов'} к начальному состоянию?`)) {
+      const doReset = () => {
         const data = getActiveTierData();
         data.rows = JSON.parse(JSON.stringify(DEFAULT_TIER_ROWS));
         data.unranked = [];
         saveTierListStorage();
         renderTierBoard();
         showToast('Тирлист сброшен к стандартным рядам', 'info');
+      };
+      const kindName = activeTierKind === 'actors' ? 'актёров' : 'фильмов';
+      if (typeof window.showConfirmModal === 'function') {
+        window.showConfirmModal({
+          title: `Сбросить тирлист ${kindName}?`,
+          message: 'Все ряды вернутся к стандартным категориям S/A/B/C/D, а добавленные постеры будут очищены.',
+          confirmText: 'Сбросить тирлист',
+          danger: true,
+          onConfirm: doReset
+        });
+      } else if (confirm(`Сбросить тирлист ${kindName} к начальному состоянию?`)) {
+        doReset();
       }
       return;
     }
@@ -1006,12 +1030,24 @@
       const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(compactPayload))));
       const shareUrl = `${window.location.origin}${window.location.pathname}#tier=${encodeURIComponent(b64)}`;
 
-      if (navigator.clipboard) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareUrl).then(() => {
           showToast('🔗 Ссылка на тирлист скопирована в буфер обмена!', 'success');
-        }).catch(() => prompt('Скопируйте ссылку на тирлист:', shareUrl));
+        }).catch(() => {
+          if (typeof window.showModalPrompt === 'function') {
+            window.showModalPrompt({ title: 'Ссылка на тирлист', message: 'Скопируйте ссылку на тирлист:', value: shareUrl, readonly: true });
+          } else {
+            showToast('Ссылка сформирована в адресной строке', 'info');
+            window.location.hash = `#tier=${encodeURIComponent(b64)}`;
+          }
+        });
       } else {
-        prompt('Скопируйте ссылку на тирлист:', shareUrl);
+        if (typeof window.showModalPrompt === 'function') {
+          window.showModalPrompt({ title: 'Ссылка на тирлист', message: 'Скопируйте ссылку на тирлист:', value: shareUrl, readonly: true });
+        } else {
+          showToast('Ссылка сформирована в адресной строке', 'info');
+          window.location.hash = `#tier=${encodeURIComponent(b64)}`;
+        }
       }
     } catch (err) {
       showToast('Ошибка при формировании ссылки: ' + err.message, 'error');
@@ -1063,4 +1099,6 @@
   window.renderTierBoard = renderTierBoard;
   window.exportTierListPng = exportTierListPng;
   window.shareTierListProject = shareTierListProject;
+  window.saveTierListStorage = saveTierListStorage;
+  window.getActiveTierData = getActiveTierData;
 })();

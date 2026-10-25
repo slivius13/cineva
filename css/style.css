@@ -1255,3 +1255,375 @@ button,input{font:inherit}
   }
 }
 
+/* ==========================================================================
+   CINEVA NATIVE MODAL DIALOG SYSTEM (ZERO BROWSER PROMPTS)
+   ========================================================================== */
+.cv-native-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  padding: 18px;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 5, 11, 0.88);
+  backdrop-filter: blur(16px);
+  animation: cvModalFadeIn .18s ease-out;
+}
+.cv-native-modal-card {
+  width: min(100%, 480px);
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
+  border: 1px solid #363d53;
+  border-radius: 24px;
+  background: radial-gradient(420px 220px at 100% 0%, rgba(197, 255, 101, 0.08), transparent 70%),
+              linear-gradient(145deg, #181c2b, #0d101a);
+  padding: clamp(20px, 4vw, 28px);
+  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.85);
+  position: relative;
+  animation: cvModalScaleIn .22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes cvModalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cvModalScaleIn {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.cv-modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.cv-modal-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(197, 255, 101, 0.12);
+  border: 1px solid rgba(197, 255, 101, 0.3);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  flex: 0 0 44px;
+}
+.cv-modal-icon-badge.danger {
+  background: rgba(255, 77, 109, 0.12);
+  border-color: rgba(255, 77, 109, 0.35);
+  color: #ff4d6d;
+}
+.cv-modal-title {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  margin: 0 0 4px;
+  color: #f3f6fc;
+}
+.cv-modal-desc {
+  font-size: 12.5px;
+  color: #9da8be;
+  line-height: 1.6;
+  margin: 0;
+}
+.cv-modal-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #8c97af;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .15s ease;
+  padding: 0;
+}
+.cv-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+/* Password Input & Eye Toggle */
+.cv-password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.cv-password-input-wrap input {
+  width: 100%;
+  padding-right: 44px !important;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+}
+.cv-password-toggle-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent !important;
+  border: 0 !important;
+  padding: 7px !important;
+  color: #838fa8 !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  border-radius: 8px !important;
+  flex: 0 0 auto !important;
+  transition: all .15s ease !important;
+}
+.cv-password-toggle-btn:hover {
+  color: #f3f6fc !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.cv-modal-error-box {
+  background: rgba(255, 77, 109, 0.12);
+  border: 1px solid rgba(255, 77, 109, 0.35);
+  color: #ff94a8;
+  font-size: 11.5px;
+  padding: 9px 13px;
+  border-radius: 11px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: cvModalFadeIn .15s ease;
+}
+
+/* Account Switcher UI */
+.cv-accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 16px 0;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.cv-account-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 15px;
+  background: rgba(14, 18, 29, 0.7);
+  border: 1px solid #283044;
+  cursor: pointer;
+  transition: all .15s ease;
+  gap: 12px;
+}
+.cv-account-item:hover {
+  border-color: #4b587a;
+  background: rgba(26, 32, 50, 0.7);
+  transform: translateX(2px);
+}
+.cv-account-item.active {
+  border-color: var(--cv-accent);
+  background: rgba(197, 255, 101, 0.08);
+  box-shadow: 0 0 20px rgba(197, 255, 101, 0.1);
+}
+.cv-account-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.cv-account-item-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  object-fit: cover;
+  background: #1e2436;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  flex: 0 0 38px;
+}
+.cv-account-item-info {
+  min-width: 0;
+}
+.cv-account-item-name {
+  font-size: 13.5px;
+  font-weight: 850;
+  color: #f3f6fc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cv-account-item-meta {
+  font-size: 11px;
+  color: #8c97af;
+}
+.cv-account-badge-active {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: rgba(197, 255, 101, 0.18);
+  color: var(--cv-accent);
+  border: 1px solid rgba(197, 255, 101, 0.35);
+  white-space: nowrap;
+}
+
+/* Profile Banner Theme Presets */
+.profile-hero.theme-cyberpunk {
+  background: radial-gradient(650px 320px at 95% 0%, rgba(255, 77, 109, 0.22), transparent 70%),
+              radial-gradient(500px 300px at 0% 100%, rgba(189, 131, 255, 0.18), transparent 72%),
+              linear-gradient(145deg, #231222, #0d0c16 76%) !important;
+  border-color: #552744 !important;
+}
+.profile-hero.theme-emerald {
+  background: radial-gradient(650px 320px at 95% 0%, rgba(52, 211, 153, 0.22), transparent 70%),
+              radial-gradient(500px 300px at 0% 100%, rgba(16, 185, 129, 0.18), transparent 72%),
+              linear-gradient(145deg, #0d2218, #07130e 76%) !important;
+  border-color: #1e4d37 !important;
+}
+.profile-hero.theme-gold {
+  background: radial-gradient(650px 320px at 95% 0%, rgba(251, 191, 36, 0.22), transparent 70%),
+              radial-gradient(500px 300px at 0% 100%, rgba(245, 158, 11, 0.18), transparent 72%),
+              linear-gradient(145deg, #241d0f, #110e08 76%) !important;
+  border-color: #554420 !important;
+}
+.profile-hero.theme-amethyst {
+  background: radial-gradient(650px 320px at 95% 0%, rgba(189, 131, 255, 0.25), transparent 70%),
+              radial-gradient(500px 300px at 0% 100%, rgba(139, 92, 246, 0.2), transparent 72%),
+              linear-gradient(145deg, #201333, #0d0a17 76%) !important;
+  border-color: #4b2b6f !important;
+}
+.profile-hero.theme-monochrome {
+  background: radial-gradient(650px 320px at 95% 0%, rgba(255, 255, 255, 0.09), transparent 70%),
+              radial-gradient(500px 300px at 0% 100%, rgba(255, 255, 255, 0.05), transparent 72%),
+              linear-gradient(145deg, #161618, #0b0b0d 76%) !important;
+  border-color: #333338 !important;
+}
+.profile-hero.has-custom-banner {
+  background-size: cover !important;
+  background-position: center !important;
+  position: relative;
+}
+.profile-hero.has-custom-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.72) 0%, rgba(7, 10, 18, 0.94) 100%);
+  z-index: 0;
+  border-radius: inherit;
+}
+.profile-hero.has-custom-banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Banner Theme Picker in Edit Modal */
+.cv-theme-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.cv-theme-preset-btn {
+  height: 42px;
+  border-radius: 11px;
+  border: 1px solid #343c52;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: all .15s ease;
+}
+.cv-theme-preset-btn.selected {
+  border-color: var(--cv-accent);
+  box-shadow: 0 0 14px rgba(197, 255, 101, 0.4);
+  transform: scale(1.06);
+}
+
+/* Movie Picker Modal Live Search Results */
+.cv-picker-results {
+  max-height: 290px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 12px;
+}
+.cv-picker-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 11px;
+  border-radius: 12px;
+  background: rgba(14, 18, 29, 0.7);
+  border: 1px solid #283045;
+  cursor: pointer;
+  transition: all .15s ease;
+  text-align: left;
+}
+.cv-picker-result-item:hover {
+  background: rgba(30, 38, 59, 0.8);
+  border-color: var(--cv-accent);
+  transform: translateX(3px);
+}
+.cv-picker-thumb {
+  width: 36px;
+  height: 52px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: #171b29;
+  flex: 0 0 36px;
+}
+.cv-picker-info strong {
+  font-size: 13px;
+  color: #f3f6fc;
+  display: block;
+}
+.cv-picker-info small {
+  font-size: 11px;
+  color: #8c97af;
+}
+
+/* Security Status Indicator */
+.cv-security-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 15px;
+  background: rgba(14, 19, 31, 0.8);
+  border: 1px solid #2b3349;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.cv-security-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 850;
+}
+.cv-security-status-badge.protected {
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #34d399;
+}
+.cv-security-status-badge.open {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  color: #fbbf24;
+}
+
+

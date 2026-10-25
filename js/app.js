@@ -269,6 +269,9 @@
 
   function updateWatchlistUI() {
     updateWatchlistCount();
+    if (window.CINEVA_ACCOUNT && typeof window.CINEVA_ACCOUNT.renderProfilePage === 'function' && document.body.dataset.page === 'profile') {
+      window.CINEVA_ACCOUNT.renderProfilePage();
+    }
     const grid = byId('watchlistGrid');
     const status = byId('watchlistStatus');
     const clearBtn = byId('watchlistClearBtn');
@@ -1337,10 +1340,21 @@
 
     // 7. Clear entire Watchlist
     if (event.target.closest('#watchlistClearBtn')) {
-      if (confirm('Очистить весь список избранного?')) {
+      const doClear = () => {
         saveWatchlist([]);
         updateWatchlistUI();
         showToast('Список избранного очищен', 'info');
+      };
+      if (typeof window.showConfirmModal === 'function') {
+        window.showConfirmModal({
+          title: 'Очистить избранное?',
+          message: 'Все сохранённые фильмы, сериалы и персоны будут удалены из списка вашей коллекции.',
+          confirmText: 'Да, очистить всё',
+          danger: true,
+          onConfirm: doClear
+        });
+      } else if (confirm('Очистить весь список избранного?')) {
+        doClear();
       }
       return;
     }
