@@ -64,8 +64,8 @@
 <main id="page-profile" class="site-page active">
   <div class="site-container">
 
-    <!-- Profile Hero Card -->
-    <section class="profile-hero">
+    <!-- Profile Hero Card (Minimalist) -->
+    <section class="profile-hero cv-minimalist-hero">
       <div class="profile-hero-top">
         <div class="profile-avatar-wrap">
           <div class="profile-avatar" id="profileAvatarDisplay">🎬</div>
@@ -76,22 +76,13 @@
           <div class="profile-name-row">
             <h1 class="profile-name" id="profileUsername">Синефил CINEVA</h1>
             <span class="profile-handle" id="profileHandle">@cinephile</span>
-            <div class="profile-rank-pill" id="profileRankPill">🎬 <span>Каннский критик</span></div>
           </div>
 
-          <div class="profile-status-bubble">
-            <span class="status-icon">💬</span>
-            <span id="profileStatusText">Кино — это жизнь, в которой вырезали всё скучное</span>
-          </div>
-
-          <p class="profile-bio-text" id="profileBioText">Исследую авторское кино, коллекционирую редкие фильмы и делюсь авторскими тирлистами.</p>
+          <p class="profile-bio-text" id="profileBioText">Исследую кино, коллекционирую редкие фильмы и делюсь авторскими тирлистами.</p>
 
           <div class="profile-top-actions">
             <button class="site-btn primary" id="openEditProfileBtn" type="button">✏️ Редактировать профиль</button>
             <button class="site-btn" id="openAccountSwitcherBtn" type="button" title="Переключить аккаунт или создать новый">👥 Аккаунты</button>
-            <button class="site-btn" id="exportProfileJsonBtn" type="button" title="Скачать резервную копию аккаунта в JSON">💾 Экспорт JSON</button>
-            <button class="site-btn" id="importProfileJsonTrigger" type="button" title="Загрузить аккаунт из JSON файла">📂 Импорт JSON</button>
-            <input type="file" id="importProfileJsonInput" accept=".json,application/json" style="display:none">
             <button class="site-btn" data-open-settings type="button">⚙️ API Ключи</button>
           </div>
         </div>
@@ -120,10 +111,7 @@
 
     <!-- Profile Navigation Tabs -->
     <nav class="profile-tabs" role="tablist" aria-label="Вкладки профиля">
-      <button type="button" class="profile-tab-btn active" data-profile-tab="overview">
-        <span>📌 Обзор и витрина</span>
-      </button>
-      <button type="button" class="profile-tab-btn" data-profile-tab="watchlist">
+      <button type="button" class="profile-tab-btn active" data-profile-tab="watchlist">
         <span>🔖 Избранное (Watchlist)</span>
         <span class="profile-tab-count" id="tabCountWatchlist">0</span>
       </button>
@@ -136,28 +124,12 @@
         <span class="profile-tab-count" id="tabCountTierlists">0</span>
       </button>
       <button type="button" class="profile-tab-btn" data-profile-tab="security">
-        <span>⚙️ Резервная копия и JSON</span>
+        <span>⚙️ Настройки и бэкап</span>
       </button>
     </nav>
 
-    <!-- TAB 1: OVERVIEW & SHOWCASE -->
-    <section class="profile-panel" id="tab-panel-overview">
-      <div id="profilePinnedContainer" style="display:none;margin-bottom:24px"></div>
-
-      <div class="profile-showcase-grid">
-        <div id="profileFavMovieContainer"></div>
-
-        <div class="notice-card" style="display:flex;flex-direction:column;justify-content:center">
-          <span style="font-size:10px;font-weight:850;letter-spacing:.16em;text-transform:uppercase;color:var(--cv-accent);margin-bottom:6px">ЛЮБИМЫЕ ЖАНРЫ</span>
-          <strong style="font-size:16px;color:#f4f6fc">Вкусовая палитра</strong>
-          <div class="genre-cloud" id="profileGenresCloud"></div>
-          <div id="profileExtraDetails"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 2: WATCHLIST -->
-    <section class="profile-panel" id="tab-panel-watchlist" hidden>
+    <!-- TAB 1: WATCHLIST (DEFAULT) -->
+    <section class="profile-panel" id="tab-panel-watchlist">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
         <div>
           <h2 style="font-size:20px;margin:0 0 4px;letter-spacing:-.03em">Моя коллекция к просмотру</h2>
@@ -169,7 +141,7 @@
       <div class="search-results" id="profileWatchlistGrid"></div>
     </section>
 
-    <!-- TAB 3: RATINGS HISTORY -->
+    <!-- TAB 2: RATINGS HISTORY -->
     <section class="profile-panel" id="tab-panel-ratings" hidden>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
         <div>
@@ -181,7 +153,7 @@
       <div class="ratings-history-grid" id="profileRatingsGrid"></div>
     </section>
 
-    <!-- TAB 4: TIERLISTS HISTORY -->
+    <!-- TAB 3: TIERLISTS HISTORY -->
     <section class="profile-panel" id="tab-panel-tierlists" hidden>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
         <div>
@@ -193,37 +165,47 @@
       <div class="tierlist-history-grid" id="profileTierlistsGrid"></div>
     </section>
 
-    <!-- TAB 5: SECURITY & JSON -->
+    <!-- TAB 4: SECURITY & BACKUP -->
     <section class="profile-panel" id="tab-panel-security" hidden>
-      <div id="securityStatusWrap"></div>
-
-      <div class="notice-card" style="line-height:1.7;margin-bottom:20px">
-        <strong style="font-size:16px;color:#f3f6fc;margin-bottom:8px">Портативный аккаунт через JSON</strong>
-        Все ваши персональные данные — никнейм, аватар, статус, избранное, история оценок CINEVA и тирлисты — хранятся прямо в локальном хранилище вашего браузера.
-        Вы можете в любой момент сохранить резервную копию аккаунта в один лёгкий `.json` файл и открыть его на любом компьютере, планшете или телефоне.
+      <!-- Server Connection Status Card -->
+      <div class="notice-card cv-server-config-card" style="margin-bottom:20px;border-color:rgba(52,211,153,0.3)">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:10.5px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:var(--cv-accent);margin-bottom:4px">БЭКЕНД И БАЗА ДАННЫХ SQLITE</div>
+            <strong style="font-size:16px;color:#f3f6fc">Сервер базы данных CINEVA</strong>
+            <div id="serverConnDesc" style="font-size:12.5px;color:#9da8be;margin-top:4px">Проверка подключения к локальному серверу…</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="site-btn" id="serverCheckBtn" type="button">🔄 Проверить сервер</button>
+            <button class="site-btn primary" id="serverSyncBtn" type="button">☁️ Синхронизировать с базой</button>
+          </div>
+        </div>
+        <div id="serverSyncDetails" style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);display:none;font-size:12px;color:#a7f3d0"></div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:20px">
+      <div id="securityStatusWrap"></div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin:20px 0">
         <div class="notice-card">
           <strong style="color:var(--cv-accent)">💾 Экспорт текущего профиля</strong>
-          <p style="font-size:12px;color:#9ba6be;margin:8px 0 16px">Сохраняет активный аккаунт со всеми его оценками, избранным и тирлистами.</p>
-          <button class="site-btn primary" id="exportProfileJsonBtn2" type="button">Скачать JSON профиля</button>
+          <p style="font-size:12px;color:#9ba6be;margin:8px 0 16px">Сохраняет активный аккаунт со всеми его оценками, избранным и тирлистами в файл .json.</p>
+          <button class="site-btn primary" id="exportProfileJsonBtn" type="button">Скачать JSON профиля</button>
         </div>
 
         <div class="notice-card">
           <strong style="color:#60a5fa">📂 Импорт аккаунта из JSON</strong>
-          <p style="font-size:12px;color:#9ba6be;margin:8px 0 16px">Восстановите свои коллекции и оценки на новом устройстве из ранее сохранённого JSON-файла.</p>
+          <p style="font-size:12px;color:#9ba6be;margin:8px 0 16px">Восстановите свои коллекции и оценки на новом устройстве из сохранённого файла.</p>
           <label class="site-btn" style="cursor:pointer;display:inline-block;text-align:center">
             Выбрать JSON файл
-            <input type="file" id="importProfileJsonInput2" accept=".json,application/json" style="display:none">
+            <input type="file" id="importProfileJsonInput" accept=".json,application/json" style="display:none">
           </label>
         </div>
       </div>
 
       <div class="notice-card" style="border-color:#363d55">
-        <strong style="color:#f3f6fc">👥 Управление несколькими аккаунтами</strong>
+        <strong style="color:#f3f6fc">👥 Управление профилями</strong>
         <p style="font-size:12.5px;color:#9da8be;margin:6px 0 16px;line-height:1.6">
-          Создавайте отдельные профили для разных жанров, членов семьи или тестовых подборок. Переключайтесь между ними без потери данных.
+          Создавайте отдельные профили для разных жанров или членов семьи. Переключайтесь между ними в 1 клик.
         </p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button type="button" class="site-btn primary" onclick="window.accountManager.showAccountSwitcherModal()">👥 Список аккаунтов</button>
@@ -236,11 +218,11 @@
   </div>
 </main>
 
-<!-- Modal: Edit Profile Dialog -->
+<!-- Modal: Edit Profile Dialog (Minimalist) -->
 <div class="settings-overlay modal-backdrop-close" id="editProfileOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="editProfileHeading">
-  <div class="settings-card" style="width:min(100%, 580px)">
+  <div class="settings-card" style="width:min(100%, 520px)">
     <h2 id="editProfileHeading">Редактирование профиля</h2>
-    <p>Настройте отображение вашего аккаунта синефила. Изменения сохраняются локально.</p>
+    <p>Настройте отображение вашего аккаунта синефила. Изменения сохраняются моментально.</p>
 
     <div class="setting-field">
       <label for="editUsernameInp">Имя / Никнейм</label>
@@ -248,55 +230,13 @@
     </div>
 
     <div class="setting-field">
-      <label for="editHandleInp">Уникальный ID / Handle</label>
+      <label for="editHandleInp">Уникальный @handle</label>
       <input id="editHandleInp" type="text" maxlength="24" placeholder="user_handle">
     </div>
 
     <div class="setting-field">
-      <label for="editCustomTitleInp">Особый синефильский титул (опционально, переопределяет авторанг)</label>
-      <input id="editCustomTitleInp" type="text" maxlength="40" placeholder="Например: Неоновый синефил, Знаток Тарковского...">
-    </div>
-
-    <div class="setting-field">
-      <label for="editStatusInp">Статус / Цитата киномана</label>
-      <input id="editStatusInp" type="text" maxlength="90" placeholder="Цитата или текущее настроение к кино">
-    </div>
-
-    <div class="setting-field">
-      <label>Тема оформления шапки (Баннер)</label>
-      <div class="cv-theme-picker-grid" id="bannerThemePickerGrid"></div>
-      <input id="editBannerUrlInp" type="url" placeholder="Или своя ссылка на постер/баннер (URL картинки)" style="margin-top:8px">
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="setting-field">
-        <label for="editFavDirectorInp">Любимый режиссёр</label>
-        <input id="editFavDirectorInp" type="text" maxlength="50" placeholder="Кристофер Нолан">
-      </div>
-      <div class="setting-field">
-        <label for="editFavTvInp">Любимый сериал</label>
-        <input id="editFavTvInp" type="text" maxlength="50" placeholder="Во все тяжкие">
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      <div class="setting-field">
-        <label for="editSocialLetterboxdInp">Letterboxd</label>
-        <input id="editSocialLetterboxdInp" type="text" maxlength="32" placeholder="username">
-      </div>
-      <div class="setting-field">
-        <label for="editSocialKpInp">Кинопоиск ID</label>
-        <input id="editSocialKpInp" type="text" maxlength="32" placeholder="user id">
-      </div>
-      <div class="setting-field">
-        <label for="editSocialTgInp">Telegram</label>
-        <input id="editSocialTgInp" type="text" maxlength="32" placeholder="@handle">
-      </div>
-    </div>
-
-    <div class="setting-field">
-      <label for="editBioInp">О себе и вкусах в кино</label>
-      <textarea id="editBioInp" rows="3" style="width:100%;border:1px solid #343c52;background:#080b13;border-radius:11px;padding:12px;color:#f4f6fc;font:inherit;resize:vertical;outline:none" placeholder="Расскажите о любимых режиссёрах, жанрах или эпохах..."></textarea>
+      <label for="editBioInp">О себе и кино-вкусах (Bio)</label>
+      <textarea id="editBioInp" rows="4" style="width:100%;border:1px solid #343c52;background:#080b13;border-radius:11px;padding:12px;color:#f4f6fc;font:inherit;resize:vertical;outline:none" placeholder="Расскажите о любимых фильмах, режиссёрах, эпохах или добавьте любимую киноцитату..."></textarea>
     </div>
 
     <div class="setting-field">
@@ -310,22 +250,17 @@
       </div>
     </div>
 
-    <div class="setting-field">
-      <label>Любимые жанры кино</label>
-      <div class="genre-select-wrap" id="genreChoicesWrap"></div>
-    </div>
-
     <div class="setting-field" style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <div>
         <label style="margin:0;display:block">Защита и пароль аккаунта</label>
-        <small style="color:#8c98af;font-size:11.5px">Настройте или удалите пароль через защищённый диалог</small>
+        <small style="color:#8c98af;font-size:11.5px">Установка, смена или удаление пароля</small>
       </div>
       <button class="site-btn" id="modalManagePasswordBtn" type="button">🔐 Настроить пароль</button>
     </div>
 
     <div class="settings-actions">
       <button class="site-btn" id="closeEditProfileBtn" type="button">Отмена</button>
-      <button class="site-btn primary" id="saveProfileBtn" type="button">Сохранить профиль</button>
+      <button class="site-btn primary" id="saveProfileBtn" type="button">Сохранить</button>
     </div>
   </div>
 </div>
@@ -370,6 +305,7 @@
 <div class="toast-container" id="toastContainer"></div>
 <button class="scroll-top" id="scrollTopBtn" type="button" title="Наверх" aria-label="Прокрутить наверх">↑</button>
 
+<script src="js/api.js"></script>
 <script src="js/app.js"></script>
 <script src="js/account.js"></script>
 </body>

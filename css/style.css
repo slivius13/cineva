@@ -815,6 +815,23 @@ button,input{font:inherit}
   box-shadow: 0 0 16px rgba(197, 255, 101, 0.15);
 }
 
+.profile-minimal-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0 18px;
+  font-size: 13px;
+  color: #9ba6be;
+}
+.profile-minimal-stats strong {
+  color: #f3f6fc;
+  font-weight: 800;
+}
+.profile-minimal-stats .stat-sep {
+  color: #434c64;
+}
+
 .profile-status-bubble {
   margin: 12px 0 14px;
   display: inline-flex;
@@ -1644,3 +1661,39 @@ button,input{font:inherit}
 
 
 
+
+/* Server Status Badge */
+.cv-server-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(14, 18, 28, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #9da8be;
+  cursor: default;
+  transition: all .2s ease;
+  user-select: none;
+}
+.cv-server-status-pill.is-online {
+  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(16, 185, 129, 0.1);
+  color: #a7f3d0;
+}
+.cv-server-status-pill .status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.cv-server-status-pill .status-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+.cv-server-status-pill .status-dot.offline {
+  background: #64748b;
+}

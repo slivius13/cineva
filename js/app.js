@@ -550,110 +550,20 @@
     return bestScore >= 0.78 ? best : null;
   }
 
-  async function searchUnifiedMedia(rawQuery, mode = 'multi', signal, forceOriginal = false) {
+  async function searchUnifiedMedia(rawQuery, mode = 'multi', signal) {
     const query = String(rawQuery || '').trim().replace(/\s+/g, ' ');
-    if (query.length < 2) return { results: [], suggestion: null, wasAutoCorrected: false };
+    if (query.length < 2) return { results: [] };
 
-    const cacheKey = `${mode}:${query.toLowerCase()}:${forceOriginal ? '1' : '0'}`;
+    const cacheKey = `${mode}:${query.toLowerCase()}`;
     if (searchCache.has(cacheKey)) {
       return searchCache.get(cacheKey);
     }
 
-    let suggestion = null;
-    let wasAutoCorrected = false;
-    let effectiveQuery = query;
-
-    if (!forceOriginal) {
-      const layoutSug = detectLayoutSuggestion(query);
-      if (layoutSug) {
-        effectiveQuery = layoutSug.corrected;
-        wasAutoCorrected = true;
-        suggestion = layoutSug;
-      }
-    }
-
     let tmdbResults = [], kp = { results: [], error: null };
     try {
-      try { tmdbResults = await searchTmdbGlobal(effectiveQuery, mode, signal); } catch (_) {}
+      try { tmdbResults = await searchTmdbGlobal(query, mode, signal); } catch (_) {}
       if (mode !== 'person') {
-        try { kp = await getKpMatches(effectiveQuery, mode, signal); } catch (_) {}
-      }
-
-      // If initial search had zero results and forceOriginal is false: Algorithmic Fuzzy Recovery
-      if (!tmdbResults.length && !kp.results.length && !forceOriginal) {
-        // Step 1: try layout flip if not tried yet
-        const flipped = switchKeyboardLayout(query).trim();
-        if (flipped && flipped !== query && flipped !== effectiveQuery) {
-          try { tmdbResults = await searchTmdbGlobal(flipped, mode, signal); } catch (_) {}
-          if (mode !== 'person') {
-            try { kp = await getKpMatches(flipped, mode, signal); } catch (_) {}
-          }
-          if (tmdbResults.length || kp.results.length) {
-            suggestion = { type: 'layout', corrected: flipped, original: query };
-            wasAutoCorrected = true;
-            effectiveQuery = flipped;
-          }
-        }
-
-        // Step 2: Algorithmic Token & Prefix Stem Relaxation
-        if (!tmdbResults.length && !kp.results.length) {
-          const words = query.split(/\s+/).filter(w => w.length >= 3);
-          let relaxedQuery = '';
-          if (words.length > 1) {
-            // Pick longest word
-            relaxedQuery = [...words].sort((a, b) => b.length - a.length)[0];
-          } else if (query.length >= 5) {
-            // Prefix stem (e.g. "интерстеляр" -> "интерстел")
-            relaxedQuery = query.slice(0, Math.max(4, query.length - 2));
-          }
-
-          if (relaxedQuery && relaxedQuery.length >= 3) {
-            let relaxedTmdb = [], relaxedKp = { results: [] };
-            try { relaxedTmdb = await searchTmdbGlobal(relaxedQuery, mode, signal); } catch (_) {}
-            if (mode !== 'person') {
-              try { relaxedKp = await getKpMatches(relaxedQuery, mode, signal); } catch (_) {}
-            }
-            const allCandidates = [...relaxedTmdb, ...relaxedKp.results];
-
-            // Evaluate candidates against original query using Damerau-Levenshtein
-            let bestCand = null, bestSim = 0;
-            for (const cand of allCandidates) {
-              const titles = [cand.title, cand.name, cand.nameRu, cand.nameEn, cand.original_title].filter(Boolean);
-              for (const t of titles) {
-                const sim = calcStringSimilarity(query, t);
-                if (sim > bestSim) {
-                  bestSim = sim;
-                  bestCand = t;
-                }
-              }
-            }
-
-            if (bestSim >= 0.78 && bestCand) {
-              // Found algorithmic typo match! Re-search best candidate
-              suggestion = { type: 'typo', corrected: bestCand, original: query };
-              wasAutoCorrected = true;
-              try { tmdbResults = await searchTmdbGlobal(bestCand, mode, signal); } catch (_) {}
-              if (mode !== 'person') {
-                try { kp = await getKpMatches(bestCand, mode, signal); } catch (_) {}
-              }
-            }
-          }
-        }
-      }
-
-      // Step 3: If results exist, check if top results suggest a minor typo correction
-      if ((tmdbResults.length || kp.results.length) && !wasAutoCorrected && !forceOriginal) {
-        const topCandidates = [...tmdbResults, ...kp.results].slice(0, 6);
-        for (const cand of topCandidates) {
-          const candTitle = titleName(cand);
-          if (candTitle && normalizeSearchText(candTitle) !== normalizeSearchText(query)) {
-            const sim = calcStringSimilarity(query, candTitle);
-            if (sim >= 0.82 && sim < 1.0) {
-              suggestion = { type: 'typo', corrected: candTitle, original: query };
-              break;
-            }
-          }
-        }
+        try { kp = await getKpMatches(query, mode, signal); } catch (_) {}
       }
 
       const merged = [];
@@ -683,11 +593,11 @@
       }
 
       const results = merged.slice(0, 30);
-      const resObj = { results, suggestion, wasAutoCorrected };
+      const resObj = { results };
       searchCache.set(cacheKey, resObj);
       return resObj;
     } catch (_) {
-      return { results: [], suggestion: null, wasAutoCorrected: false };
+      return { results: [] };
     }
   }
 
@@ -900,28 +810,7 @@
   // ==========================================
   // SEARCH PAGE EXECUTION (SEARCH.HTML)
   // ==========================================
-  function renderSearchBanner(suggestion, wasAutoCorrected = false) {
-    const banner = byId('searchSuggestionBanner');
-    if (!banner) return;
-    if (!suggestion) { banner.hidden = true; banner.innerHTML = ''; return; }
-
-    if (wasAutoCorrected) {
-      banner.innerHTML = `
-        <span class="suggest-badge">Автоисправление</span>
-        <span>Показаны результаты по запросу: <button type="button" class="suggest-link" data-execute-search="${safe(suggestion.corrected)}"><strong>${safe(suggestion.corrected)}</strong></button></span>
-        <span style="color:#7886a0">· Искать вместо этого: <button type="button" class="original-query-link" data-execute-search="${safe(suggestion.original)}" data-force="true">«${safe(suggestion.original)}»</button></span>
-      `;
-    } else {
-      const label = suggestion.type === 'layout' ? 'Исправление раскладки' : 'Возможно, вы имели в виду:';
-      banner.innerHTML = `
-        <span class="suggest-badge">${label}</span>
-        <span><button type="button" class="suggest-link" data-execute-search="${safe(suggestion.corrected)}"><strong>${safe(suggestion.corrected)}</strong></button> ?</span>
-      `;
-    }
-    banner.hidden = false;
-  }
-
-  async function runGlobalSearch(rawQuery, mode = activeSearchMode, forceOriginal = false) {
+  async function runGlobalSearch(rawQuery, mode = activeSearchMode) {
     const query = String(rawQuery || '').trim().replace(/\s+/g, ' ');
     activeSearchMode = mode;
     lastSearchQuery = query;
@@ -937,7 +826,6 @@
     if (query.length < 2) {
       if (byId('searchStatus')) byId('searchStatus').textContent = 'Введи хотя бы два символа.';
       if (byId('searchResults')) byId('searchResults').innerHTML = '';
-      if (byId('searchSuggestionBanner')) byId('searchSuggestionBanner').hidden = true;
       return;
     }
 
@@ -970,16 +858,15 @@
       window.history.replaceState(null, '', u.toString());
     } catch (_) {}
 
-    const { results, suggestion, wasAutoCorrected } = await searchUnifiedMedia(query, mode, undefined, forceOriginal);
+    const { results } = await searchUnifiedMedia(query, mode);
     if (token !== searchCounter) return;
 
-    lastSearchItems = results;
-    renderSearchBanner(suggestion, wasAutoCorrected);
+    lastSearchItems = results || [];
 
     const resultsGrid = byId('searchResults');
     const searchStatus = byId('searchStatus');
 
-    if (results.length) {
+    if (results && results.length) {
       if (resultsGrid) {
         resultsGrid.innerHTML = results.map(item => posterCard(item, mode === 'movie' ? 'movie' : mode === 'tv' ? 'tv' : mode === 'person' ? 'person' : 'multi')).join('');
       }
@@ -1657,16 +1544,7 @@
       return;
     }
 
-    // 11. Execute suggested search
-    const execSearch = event.target.closest('[data-execute-search]');
-    if (execSearch) {
-      const q = execSearch.dataset.executeSearch;
-      const force = execSearch.dataset.force === 'true';
-      runGlobalSearch(q, activeSearchMode, force);
-      return;
-    }
-
-    // 12. Entity poster card clicks (open details)
+    // 11. Entity poster card clicks (open details)
     const entityBtn = event.target.closest('[data-open-type][data-open-id]');
     if (entityBtn) {
       if (entityBtn.dataset.openSource === 'kinopoisk') {

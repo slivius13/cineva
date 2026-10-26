@@ -309,13 +309,6 @@
         const insertIndex = parseInt(zoneEl.dataset.insertIndex || '-1', 10);
         const curData = getActiveTierData();
 
-        if (draggedSourceZone === 'unranked') {
-          curData.unranked.splice(draggedSourceIndex, 1);
-        } else if (draggedSourceZone && draggedSourceZone !== 'search') {
-          const srcRow = curData.rows.find(r => r.id === draggedSourceZone);
-          if (srcRow) srcRow.items.splice(draggedSourceIndex, 1);
-        }
-
         let targetArr;
         if (targetZone === 'unranked') {
           targetArr = curData.unranked;
@@ -325,19 +318,41 @@
         }
 
         if (targetArr) {
-          const dupIdx = targetArr.findIndex(i => String(i.id) === String(draggedItemData.id));
-          if (dupIdx >= 0) targetArr.splice(dupIdx, 1);
-
-          if (insertIndex >= 0 && insertIndex <= targetArr.length) {
-            targetArr.splice(insertIndex, 0, draggedItemData);
+          if (draggedSourceZone === targetZone) {
+            // Reordering within the same row/pool
+            let finalIdx = insertIndex;
+            if (draggedSourceIndex < insertIndex) {
+              finalIdx = Math.max(0, insertIndex - 1);
+            }
+            targetArr.splice(draggedSourceIndex, 1);
+            if (finalIdx >= 0 && finalIdx <= targetArr.length) {
+              targetArr.splice(finalIdx, 0, draggedItemData);
+            } else {
+              targetArr.push(draggedItemData);
+            }
           } else {
-            targetArr.push(draggedItemData);
+            // Moving between different rows or to/from unranked
+            if (draggedSourceZone === 'unranked') {
+              curData.unranked.splice(draggedSourceIndex, 1);
+            } else if (draggedSourceZone && draggedSourceZone !== 'search') {
+              const srcRow = curData.rows.find(r => r.id === draggedSourceZone);
+              if (srcRow) srcRow.items.splice(draggedSourceIndex, 1);
+            }
+
+            const dupIdx = targetArr.findIndex(i => String(i.id) === String(draggedItemData.id));
+            if (dupIdx >= 0) targetArr.splice(dupIdx, 1);
+
+            if (insertIndex >= 0 && insertIndex <= targetArr.length) {
+              targetArr.splice(insertIndex, 0, draggedItemData);
+            } else {
+              targetArr.push(draggedItemData);
+            }
           }
         }
 
         saveTierListStorage();
         renderTierBoard();
-        showToast(`«${draggedItemData.title}» перемещён!`, 'success');
+        showToast(`«${draggedItemData.title || draggedItemData.name}» перемещён!`, 'success');
       });
     });
   }
@@ -492,47 +507,75 @@
       }
       if (!item) return;
 
+      // If already selected, deselect
       if (selectedItemForMove && selectedItemForMove.zone === zone && selectedItemForMove.index === index) {
         selectedItemForMove = null;
         document.querySelectorAll('.tier-item').forEach(c => c.classList.remove('selected-card'));
         return;
       }
 
+      // If another card was already selected, insert before this card!
+      if (selectedItemForMove) {
+        const itemToMove = selectedItemForMove.item;
+        const srcZone = selectedItemForMove.zone;
+        const srcIdx = selectedItemForMove.index;
+
+        if (srcZone === 'unranked') {
+          data.unranked.splice(srcIdx, 1);
+        } else {
+          const srcRow = data.rows.find(r => r.id === srcZone);
+          if (srcRow) srcRow.items.splice(srcIdx, 1);
+        }
+
+        let targetArr = zone === 'unranked' ? data.unranked : data.rows.find(r => r.id === zone)?.items;
+        if (targetArr) {
+          targetArr.splice(index, 0, itemToMove);
+        }
+
+        selectedItemForMove = null;
+        saveTierListStorage();
+        renderTierBoard();
+        showToast(`«${itemToMove.title || itemToMove.name}» перемещён!`, 'success');
+        return;
+      }
+
+      // Select card for move
       selectedItemForMove = { zone, index, item };
       document.querySelectorAll('.tier-item').forEach(c => c.classList.remove('selected-card'));
       tierCard.classList.add('selected-card');
-      showToast(`Выбрано: «${item.title || item.name}». Нажмите на ряд для перемещения.`, 'info', 2000);
+      showToast(`Выбрано: «${item.title || item.name}». Нажмите на ряд для перемещения.`, 'info', 2200);
       return;
     }
 
-    // Tap on row dropzone to place selected card
-    const targetDropzone = event.target.closest('.tier-dropzone');
+    // Tap on row dropzone or label to place selected card
+    const targetDropzone = event.target.closest('.tier-dropzone, .tier-label-box');
     if (targetDropzone && selectedItemForMove) {
-      const targetZone = targetDropzone.dataset.zone === 'unranked' ? 'unranked' : targetDropzone.dataset.rowId;
-      const curData = getActiveTierData();
-      const itemToMove = selectedItemForMove.item;
+      const rowParent = targetDropzone.closest('.tier-row');
+      const targetZone = rowParent ? rowParent.dataset.rowId : (targetDropzone.dataset.zone === 'unranked' ? 'unranked' : null);
+      if (targetZone) {
+        const curData = getActiveTierData();
+        const itemToMove = selectedItemForMove.item;
 
-      // Remove from source
-      if (selectedItemForMove.zone === 'unranked') {
-        curData.unranked.splice(selectedItemForMove.index, 1);
-      } else {
-        const srcRow = curData.rows.find(r => r.id === selectedItemForMove.zone);
-        if (srcRow) srcRow.items.splice(selectedItemForMove.index, 1);
+        if (selectedItemForMove.zone === 'unranked') {
+          curData.unranked.splice(selectedItemForMove.index, 1);
+        } else {
+          const srcRow = curData.rows.find(r => r.id === selectedItemForMove.zone);
+          if (srcRow) srcRow.items.splice(selectedItemForMove.index, 1);
+        }
+
+        if (targetZone === 'unranked') {
+          curData.unranked.push(itemToMove);
+        } else {
+          const tgtRow = curData.rows.find(r => r.id === targetZone);
+          if (tgtRow) tgtRow.items.push(itemToMove);
+        }
+
+        selectedItemForMove = null;
+        saveTierListStorage();
+        renderTierBoard();
+        showToast(`«${itemToMove.title || itemToMove.name}» перемещён!`, 'success');
+        return;
       }
-
-      // Add to target
-      if (targetZone === 'unranked') {
-        curData.unranked.push(itemToMove);
-      } else {
-        const tgtRow = curData.rows.find(r => r.id === targetZone);
-        if (tgtRow) tgtRow.items.push(itemToMove);
-      }
-
-      selectedItemForMove = null;
-      saveTierListStorage();
-      renderTierBoard();
-      showToast(`«${itemToMove.title || itemToMove.name}» перемещён!`, 'success');
-      return;
     }
 
     // Delete item (X)
@@ -815,6 +858,12 @@
     return new Promise((resolve, reject) => {
       if (!url) return reject(new Error('No URL'));
       const img = new Image();
+      if (url.startsWith('data:')) {
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+        return;
+      }
       img.crossOrigin = 'anonymous';
       img.onload = () => resolve(img);
       img.onerror = () => {

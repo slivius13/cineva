@@ -1346,6 +1346,7 @@
   }
 
   function renderSecurityTab(acc) {
+    updateServerCardUI();
     const statusWrap = byId('securityStatusWrap');
     if (!statusWrap) return;
 
@@ -1376,6 +1377,80 @@
     `;
   }
 
+  function updateServerCardUI() {
+    const desc = byId('serverConnDesc');
+    const syncDetails = byId('serverSyncDetails');
+    if (!desc) return;
+
+    if (window.CinevaAPI && window.CinevaAPI.isOnline) {
+      if (window.CinevaAPI.currentUser) {
+        desc.innerHTML = `<span style="color:#34d399">🟢 Подключен</span> · Пользователь в базе: <strong>@${window.CinevaAPI.currentUser.handle}</strong> (${window.CinevaAPI.baseUrl})`;
+      } else {
+        desc.innerHTML = `<span style="color:#34d399">🟢 Сервер запущен</span> (${window.CinevaAPI.baseUrl}) · Готов к синхронизации с базой SQLite`;
+      }
+    } else {
+      desc.innerHTML = `<span style="color:#94a3b8">⚪ Сервер не запущен</span>. Запустите <code>start-server.bat</code> для работы с базой SQLite.`;
+      if (syncDetails) syncDetails.style.display = 'none';
+    }
+  }
+
+  async function handleServerSync() {
+    const api = window.CinevaAPI;
+    if (!api) return;
+    const isOnline = await api.checkServer();
+    updateServerCardUI();
+    if (!isOnline) {
+      showToast('Сервер выключен! Запустите start-server.bat на компьютере.', 'error');
+      return;
+    }
+
+    const acc = getAccount();
+    showToast('Синхронизируем с базой данных SQLite…', 'info');
+
+    try {
+      if (!api.currentUser) {
+        const passwordToUse = acc.passwordHash ? (sessionStorage.getItem('cineva_session_pass') || 'cineva_user_pass') : 'cineva_open_pass';
+        try {
+          await api.login(acc.handle || 'cinephile', passwordToUse);
+        } catch (_) {
+          await api.register(acc.username, acc.handle || ('user_' + Math.random().toString(36).substr(2, 5)), passwordToUse);
+        }
+      }
+
+      const wl = acc.watchlist || [];
+      for (const item of wl) {
+        await api.addToWatchlist(item);
+      }
+
+      const ratings = acc.ratings || [];
+      for (const r of ratings) {
+        await api.saveRating(r);
+      }
+
+      const tierlists = acc.tierlists || [];
+      for (const t of tierlists) {
+        await api.saveTierlist(t);
+      }
+
+      await api.updateProfile({
+        username: acc.username,
+        bio: acc.bio || '',
+        avatar: acc.avatar || '🎬',
+        avatarType: acc.avatarType || 'emoji'
+      });
+
+      const syncDetails = byId('serverSyncDetails');
+      if (syncDetails) {
+        syncDetails.style.display = 'block';
+        syncDetails.innerHTML = `✅ <strong>Успешно синхронизировано с базой cineva.db:</strong> ${wl.length} в избранном, ${ratings.length} оценок, ${tierlists.length} тирлистов.`;
+      }
+      updateServerCardUI();
+      showToast('☁️ Все коллекции успешно сохранены в базу данных SQLite!', 'success');
+    } catch (err) {
+      showToast('Ошибка синхронизации: ' + err.message, 'error');
+    }
+  }
+
   // ==========================================
   // PROFILE TABS CONTROLLER
   // ==========================================
@@ -1397,7 +1472,7 @@
   function syncTabFromHash() {
     const hash = window.location.hash || '';
     const params = new URLSearchParams(window.location.search);
-    let tab = 'overview';
+    let tab = 'watchlist';
 
     if (hash.includes('tab=')) {
       tab = hash.split('tab=')[1].split('&')[0];
@@ -1407,6 +1482,8 @@
 
     if (tab && byId(`tab-panel-${tab}`)) {
       switchProfileTab(tab);
+    } else {
+      switchProfileTab('watchlist');
     }
   }
 
@@ -1515,6 +1592,26 @@
     const tabBtn = event.target.closest('[data-profile-tab]');
     if (tabBtn) {
       switchProfileTab(tabBtn.dataset.profileTab);
+      return;
+    }
+
+    // Server check & sync buttons
+    if (event.target.closest('#serverCheckBtn')) {
+      if (!window.CinevaAPI) return;
+      showToast('Проверяем статус сервера…', 'info');
+      window.CinevaAPI.checkServer().then(online => {
+        updateServerCardUI();
+        if (online) {
+          showToast('🟢 Сервер базы данных CINEVA доступен!', 'success');
+        } else {
+          showToast('⚪ Сервер не запущен. Кликните start-server.bat', 'info');
+        }
+      });
+      return;
+    }
+
+    if (event.target.closest('#serverSyncBtn')) {
+      handleServerSync();
       return;
     }
 
