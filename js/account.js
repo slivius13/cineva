@@ -1,5 +1,24 @@
 /* === CINEVA ACCOUNT & MULTI-PROFILE SYSTEM (ZERO-DEPENDENCY JSON & CRYPTO) === */
 (() => {
+  // Reset all visits and session state on initial run as requested by user
+  const CINEVA_V3_RESET_KEY = 'cineva_reset_v3_clean';
+  if (!localStorage.getItem(CINEVA_V3_RESET_KEY)) {
+    try {
+      localStorage.removeItem('cineva_accounts_registry');
+      localStorage.removeItem('cineva_active_account_id');
+      localStorage.removeItem('cineva_user_account');
+      localStorage.removeItem('cineva_visited');
+      localStorage.removeItem('cineva_guest_mode');
+      localStorage.removeItem('cineva_auth_prompted');
+      localStorage.removeItem('cineva_server_token');
+      localStorage.removeItem('cineva_watchlist');
+      localStorage.removeItem('cinevaReviewerName');
+      sessionStorage.clear();
+      try { window.name = ''; } catch (_) {}
+      localStorage.setItem(CINEVA_V3_RESET_KEY, 'done');
+    } catch (_) {}
+  }
+
   const byId = id => document.getElementById(id);
   const safe = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -61,28 +80,23 @@
   }
 
   // Account Factory
-  function createDefaultAccount(customName = 'Синефил CINEVA') {
-    const handle = customName.toLowerCase().replace(/[^a-z0-9а-яё]/gi, '').slice(0, 16) || 'cinephile';
+  function createDefaultAccount(customName = 'Гость CINEVA', customHandle = 'guest') {
+    const handle = customHandle || 'guest';
     return {
       id: 'usr_' + Math.random().toString(36).substring(2, 9),
       username: customName,
       handle,
-      status: 'Кино — это жизнь, в которой вырезали всё скучное',
-      bio: 'Исследую авторское кино, коллекционирую редкие шедевры и составляю тирлисты.',
+      status: '',
+      bio: '',
       customTitle: '',
       bannerTheme: 'deep-space',
       bannerUrl: '',
       avatarType: 'emoji',
       avatar: '🎬',
-      favoriteMovie: {
-        id: '157336',
-        title: 'Интерстеллар',
-        year: '2014',
-        poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg'
-      },
-      favoriteDirector: 'Кристофер Нолан',
-      favoriteTv: 'Во все тяжкие',
-      favoriteGenres: ['Фантастика', 'Драма', 'Триллер'],
+      favoriteMovie: null,
+      favoriteDirector: '',
+      favoriteTv: '',
+      favoriteGenres: [],
       socialLinks: { kinopoisk: '', letterboxd: '', telegram: '' },
       joinedAt: new Date().toISOString(),
       passwordHash: '',
@@ -224,6 +238,15 @@
       accounts.unshift(updatedAccount);
     }
     saveAccountsRegistry(accounts, activeId);
+
+    if (window.CinevaAPI && window.CinevaAPI.isOnline && window.CinevaAPI.token) {
+      window.CinevaAPI.updateProfile({
+        username: updatedAccount.username,
+        bio: updatedAccount.bio || '',
+        avatar: updatedAccount.avatar || '🎬',
+        avatarType: updatedAccount.avatarType || 'emoji'
+      }).catch(() => {});
+    }
   }
 
   // ==========================================
@@ -707,7 +730,7 @@
     // Handle "Создать новый профиль"
     overlay.querySelector('#cvCreateAccountBtn').addEventListener('click', () => {
       close();
-      openNewAccountDialog();
+      showAuthModal('register');
     });
 
     // Handle "Бэкап всех аккаунтов"
@@ -928,6 +951,9 @@
     }
 
     saveAccount(acc);
+    if (window.CinevaAPI && window.CinevaAPI.isOnline && window.CinevaAPI.token) {
+      window.CinevaAPI.saveRating(ratingItem).catch(() => {});
+    }
     showToast(`⭐ Оценка «${ratingItem.title}» сохранена в профиль!`, 'success');
     if (window.renderProfilePage) window.renderProfilePage();
   }
@@ -938,6 +964,9 @@
     acc.ratings = acc.ratings.filter(r => String(r.id) !== String(ratingId));
     if (acc.pinnedRatingId === ratingId) acc.pinnedRatingId = '';
     saveAccount(acc);
+    if (window.CinevaAPI && window.CinevaAPI.isOnline && window.CinevaAPI.token) {
+      window.CinevaAPI.deleteRating(ratingId).catch(() => {});
+    }
     showToast('Оценка удалена из профиля', 'info');
     if (window.renderProfilePage) window.renderProfilePage();
   }
@@ -954,6 +983,9 @@
     }
 
     saveAccount(acc);
+    if (window.CinevaAPI && window.CinevaAPI.isOnline && window.CinevaAPI.token) {
+      window.CinevaAPI.saveTierlist(tierlistData).catch(() => {});
+    }
     showToast(`🏆 Тирлист «${tierlistData.title}» сохранён в профиль!`, 'success');
     if (window.renderProfilePage) window.renderProfilePage();
   }
@@ -964,6 +996,9 @@
     acc.tierlists = acc.tierlists.filter(t => t.id !== tierlistId);
     if (acc.pinnedTierlistId === tierlistId) acc.pinnedTierlistId = '';
     saveAccount(acc);
+    if (window.CinevaAPI && window.CinevaAPI.isOnline && window.CinevaAPI.token) {
+      window.CinevaAPI.deleteTierlist(tierlistId).catch(() => {});
+    }
     showToast('Тирлист удалён из профиля', 'info');
     if (window.renderProfilePage) window.renderProfilePage();
   }
@@ -2036,6 +2071,413 @@
     });
   }
 
+  // ==========================================
+  // UNIFIED AUTH & REGISTRATION MODAL
+  // ==========================================
+  let currentAuthTab = 'register'; // 'register' | 'login'
+
+  function buildAuthModalDOM() {
+    let overlay = byId('cinevaAuthModal');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.className = 'cv-auth-overlay';
+    overlay.id = 'cinevaAuthModal';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'cvAuthTitle');
+    overlay.hidden = true;
+
+    overlay.innerHTML = `
+      <div class="cv-auth-card">
+        <div class="cv-auth-header">
+          <div class="cv-auth-logo-badge">
+            <span class="site-logo-mark">C</span>
+            <div>
+              <div class="cv-auth-kicker">CINEVA · БАЗА ДАННЫХ SQLITE</div>
+              <h2 id="cvAuthTitle">Создать аккаунт</h2>
+            </div>
+          </div>
+          <button type="button" class="cv-auth-close-x" id="cvAuthCloseX" aria-label="Закрыть">✕</button>
+        </div>
+
+        <p class="cv-auth-subtitle" id="cvAuthSubtitle">
+          Зарегистрируйтесь для сохранения тирлистов, оценок и списков в базе данных SQLite. Либо продолжите без регистрации как гость.
+        </p>
+
+        <div class="cv-auth-tabs" role="tablist">
+          <button type="button" class="cv-auth-tab active" id="cvTabRegister" role="tab" aria-selected="true">✦ Регистрация</button>
+          <button type="button" class="cv-auth-tab" id="cvTabLogin" role="tab" aria-selected="false">🔑 Вход в аккаунт</button>
+        </div>
+
+        <form class="cv-auth-form" id="cvAuthForm" novalidate autocomplete="on">
+          <div class="cv-auth-field" id="cvUsernameGroup">
+            <label for="cvAuthUsername">Имя или никнейм</label>
+            <input id="cvAuthUsername" type="text" placeholder="Например: Владислав" autocomplete="name" maxlength="32">
+          </div>
+
+          <div class="cv-auth-field">
+            <label for="cvAuthLogin"><span id="cvLoginLabelText">Логин (@хэндл)</span> <span style="color:#ff4d6d">*</span></label>
+            <div class="cv-input-prefix-box">
+              <span class="cv-input-at">@</span>
+              <input id="cvAuthLogin" type="text" placeholder="логин (латиница или цифры)" autocomplete="username" required maxlength="28">
+            </div>
+            <small class="cv-auth-hint" id="cvLoginHint">Используется для входа и ссылок на ваш профиль</small>
+          </div>
+
+          <div class="cv-auth-field">
+            <label for="cvAuthPassword">Пароль <span style="color:#ff4d6d">*</span></label>
+            <div class="cv-pw-wrap">
+              <input id="cvAuthPassword" type="password" placeholder="Минимум 4 символа" autocomplete="current-password" required minlength="4">
+              <button type="button" class="cv-pw-toggle-btn" id="cvAuthPwToggle" title="Показать/скрыть пароль" aria-label="Показать пароль">👁️</button>
+            </div>
+          </div>
+
+          <div class="cv-auth-server-badge" id="cvAuthServerBadge">
+            <span class="status-dot"></span>
+            <span id="cvAuthServerBadgeText">Проверка сервера…</span>
+          </div>
+
+          <div class="cv-auth-error-msg" id="cvAuthErrorMsg" hidden></div>
+
+          <div class="cv-auth-actions">
+            <button type="submit" class="site-btn primary cv-auth-submit-btn" id="cvAuthSubmitBtn">
+              ✨ Создать аккаунт в базе данных
+            </button>
+            <button type="button" class="site-btn cv-auth-skip-btn" id="cvAuthSkipBtn">
+              Пропустить (продолжить как гость) →
+            </button>
+          </div>
+        </form>
+
+        <div class="cv-auth-footer-note">
+          💡 <span>В режиме гостя сайт работает в браузере. Вы сможете создать или сменить аккаунт в любое время на вкладке <strong>«Профиль»</strong>.</span>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const form = byId('cvAuthForm');
+    const tabReg = byId('cvTabRegister');
+    const tabLog = byId('cvTabLogin');
+    const closeX = byId('cvAuthCloseX');
+    const skipBtn = byId('cvAuthSkipBtn');
+    const pwToggle = byId('cvAuthPwToggle');
+    const pwInput = byId('cvAuthPassword');
+
+    tabReg.addEventListener('click', () => switchAuthTab('register'));
+    tabLog.addEventListener('click', () => switchAuthTab('login'));
+
+    pwToggle.addEventListener('click', () => {
+      if (pwInput.type === 'password') {
+        pwInput.type = 'text';
+        pwToggle.textContent = '🙈';
+        pwToggle.title = 'Скрыть пароль';
+      } else {
+        pwInput.type = 'password';
+        pwToggle.textContent = '👁️';
+        pwToggle.title = 'Показать пароль';
+      }
+    });
+
+    closeX.addEventListener('click', () => {
+      localStorage.setItem('cineva_guest_mode', 'true');
+      hideAuthModal();
+    });
+
+    skipBtn.addEventListener('click', () => {
+      localStorage.setItem('cineva_guest_mode', 'true');
+      hideAuthModal();
+      showToast('👤 Режим гостя. Ваши действия сохраняются в этом браузере.', 'info', 4000);
+    });
+
+    form.addEventListener('submit', handleAuthSubmit);
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        localStorage.setItem('cineva_guest_mode', 'true');
+        hideAuthModal();
+      }
+    });
+
+    return overlay;
+  }
+
+  function switchAuthTab(tab) {
+    currentAuthTab = tab;
+    buildAuthModalDOM();
+    const tabReg = byId('cvTabRegister');
+    const tabLog = byId('cvTabLogin');
+    const title = byId('cvAuthTitle');
+    const subtitle = byId('cvAuthSubtitle');
+    const userGroup = byId('cvUsernameGroup');
+    const loginLabel = byId('cvLoginLabelText');
+    const loginHint = byId('cvLoginHint');
+    const submitBtn = byId('cvAuthSubmitBtn');
+    const errorMsg = byId('cvAuthErrorMsg');
+    if (errorMsg) errorMsg.hidden = true;
+
+    if (tab === 'register') {
+      tabReg.classList.add('active');
+      tabReg.setAttribute('aria-selected', 'true');
+      tabLog.classList.remove('active');
+      tabLog.setAttribute('aria-selected', 'false');
+
+      if (title) title.textContent = 'Создать аккаунт';
+      if (subtitle) subtitle.textContent = 'Зарегистрируйтесь для сохранения тирлистов, оценок и списков в базе данных SQLite. Либо продолжите как гость.';
+      if (userGroup) userGroup.style.display = 'flex';
+      if (loginLabel) loginLabel.textContent = 'Логин (@хэндл)';
+      if (loginHint) loginHint.textContent = 'Используется для входа и ссылок на ваш профиль';
+      if (submitBtn) submitBtn.textContent = '✨ Создать аккаунт в базе данных';
+    } else {
+      tabLog.classList.add('active');
+      tabLog.setAttribute('aria-selected', 'true');
+      tabReg.classList.remove('active');
+      tabReg.setAttribute('aria-selected', 'false');
+
+      if (title) title.textContent = 'Вход в аккаунт';
+      if (subtitle) subtitle.textContent = 'Войдите, чтобы загрузить сохранённые тирлисты, оценки и избранное из базы данных SQLite.';
+      if (userGroup) userGroup.style.display = 'none';
+      if (loginLabel) loginLabel.textContent = 'Логин (@хэндл) или имя';
+      if (loginHint) loginHint.textContent = 'Введите ваш логин или никнейм, указанный при регистрации';
+      if (submitBtn) submitBtn.textContent = '🔑 Войти в аккаунт';
+    }
+    updateAuthServerBadge();
+  }
+
+  async function updateAuthServerBadge() {
+    const badge = byId('cvAuthServerBadge');
+    const text = byId('cvAuthServerBadgeText');
+    if (!badge || !text) return;
+
+    if (!window.CinevaAPI) {
+      badge.className = 'cv-auth-server-badge offline';
+      text.innerHTML = '⚪ Сервер баз данных не запущен (локальный режим)';
+      return;
+    }
+
+    const isOnline = await window.CinevaAPI.checkServer();
+    if (isOnline) {
+      badge.className = 'cv-auth-server-badge online';
+      text.innerHTML = `🟢 <strong>Сервер SQLite активен</strong> (${window.CinevaAPI.baseUrl}) · Запись напрямую в базу`;
+    } else {
+      badge.className = 'cv-auth-server-badge offline';
+      text.innerHTML = `⚪ <strong>Сервер офлайн</strong>. Запустите <code>start-server.bat</code> для сохранения в SQLite`;
+    }
+  }
+
+  async function handleAuthSubmit(event) {
+    event.preventDefault();
+    const loginInp = byId('cvAuthLogin');
+    const passInp = byId('cvAuthPassword');
+    const userInp = byId('cvAuthUsername');
+    const submitBtn = byId('cvAuthSubmitBtn');
+    const errorMsg = byId('cvAuthErrorMsg');
+
+    const login = loginInp ? loginInp.value.trim() : '';
+    const password = passInp ? passInp.value : '';
+    const username = (userInp && userInp.value.trim()) || login;
+
+    const showError = (msg) => {
+      if (errorMsg) {
+        errorMsg.textContent = msg;
+        errorMsg.hidden = false;
+      } else {
+        showToast(msg, 'error');
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = currentAuthTab === 'register' ? '✨ Создать аккаунт в базе данных' : '🔑 Войти в аккаунт';
+      }
+    };
+
+    if (!login || login.length < 2) {
+      return showError('Укажите логин (минимум 2 символа).');
+    }
+    if (!password || password.length < 4) {
+      return showError('Пароль должен содержать минимум 4 символа.');
+    }
+
+    if (errorMsg) errorMsg.hidden = true;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Обработка запроса…';
+    }
+
+    const api = window.CinevaAPI;
+    const isOnline = api ? await api.checkServer() : false;
+
+    if (currentAuthTab === 'register') {
+      if (isOnline) {
+        try {
+          const res = await api.register(username, login, password);
+          const user = res.user;
+          const newAcc = {
+            id: user.id,
+            username: user.username,
+            handle: user.handle,
+            status: '',
+            bio: user.bio || '',
+            customTitle: '',
+            bannerTheme: 'deep-space',
+            bannerUrl: '',
+            avatarType: user.avatar_type || 'emoji',
+            avatar: user.avatar || '🎬',
+            favoriteMovie: null,
+            favoriteDirector: '',
+            favoriteTv: '',
+            favoriteGenres: [],
+            socialLinks: { kinopoisk: '', letterboxd: '', telegram: '' },
+            joinedAt: user.created_at || new Date().toISOString(),
+            passwordHash: '',
+            pinnedRatingId: '',
+            pinnedTierlistId: '',
+            watchlist: [],
+            ratings: [],
+            tierlists: []
+          };
+          saveAccountsRegistry([newAcc], newAcc.id);
+          localStorage.removeItem('cineva_guest_mode');
+          hideAuthModal();
+          showToast(`🎉 Аккаунт @${user.handle} создан и записан в базу данных SQLite!`, 'success', 5000);
+          if (document.body.dataset.page === 'profile') renderProfilePage();
+          updateNavProfileBadge();
+          return;
+        } catch (err) {
+          return showError(err.message || 'Ошибка регистрации на сервере');
+        }
+      } else {
+        const passHash = await hashPassword(password);
+        const localAcc = createDefaultAccount(username, login.toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'cinephile');
+        localAcc.passwordHash = passHash;
+        saveAccountsRegistry([localAcc], localAcc.id);
+        localStorage.removeItem('cineva_guest_mode');
+        hideAuthModal();
+        showToast(`⚠️ Сервер выключен! Создан локальный профиль @${localAcc.handle}. Запустите start-server.bat для синхронизации с SQLite.`, 'warning', 6500);
+        if (document.body.dataset.page === 'profile') renderProfilePage();
+        updateNavProfileBadge();
+        return;
+      }
+    } else {
+      // Login mode
+      if (isOnline) {
+        try {
+          const res = await api.login(login, password);
+          const user = res.user;
+
+          const [wl, ratings, tierlists] = await Promise.all([
+            api.getWatchlist().catch(() => []),
+            api.getRatings().catch(() => []),
+            api.getTierlists().catch(() => [])
+          ]);
+
+          const loggedAcc = {
+            id: user.id,
+            username: user.username,
+            handle: user.handle,
+            status: '',
+            bio: user.bio || '',
+            customTitle: '',
+            bannerTheme: 'deep-space',
+            bannerUrl: '',
+            avatarType: user.avatar_type || 'emoji',
+            avatar: user.avatar || '🎬',
+            favoriteMovie: null,
+            favoriteDirector: '',
+            favoriteTv: '',
+            favoriteGenres: [],
+            socialLinks: { kinopoisk: '', letterboxd: '', telegram: '' },
+            joinedAt: user.created_at || new Date().toISOString(),
+            passwordHash: '',
+            pinnedRatingId: '',
+            pinnedTierlistId: '',
+            watchlist: Array.isArray(wl) ? wl : [],
+            ratings: Array.isArray(ratings) ? ratings : [],
+            tierlists: Array.isArray(tierlists) ? tierlists : []
+          };
+
+          const { accounts } = getAccountsRegistry();
+          const otherAccounts = accounts.filter(a => a.id !== user.id && a.handle !== user.handle);
+          saveAccountsRegistry([loggedAcc, ...otherAccounts], loggedAcc.id);
+          localStorage.removeItem('cineva_guest_mode');
+          hideAuthModal();
+          showToast(`🎉 С возвращением, @${user.handle}! Данные синхронизированы с базой SQLite.`, 'success', 5000);
+          if (document.body.dataset.page === 'profile') renderProfilePage();
+          updateNavProfileBadge();
+          return;
+        } catch (err) {
+          return showError(err.message || 'Ошибка входа');
+        }
+      } else {
+        const passHash = await hashPassword(password);
+        const { accounts } = getAccountsRegistry();
+        const found = accounts.find(a => (a.handle.toLowerCase() === login.toLowerCase() || a.username.toLowerCase() === login.toLowerCase()));
+        if (found) {
+          if (found.passwordHash && found.passwordHash !== passHash) {
+            return showError('Неверный пароль локального профиля.');
+          }
+          saveAccountsRegistry(accounts, found.id);
+          localStorage.removeItem('cineva_guest_mode');
+          hideAuthModal();
+          showToast(`Вход в локальный профиль @${found.handle}.`, 'info');
+          if (document.body.dataset.page === 'profile') renderProfilePage();
+          updateNavProfileBadge();
+          return;
+        } else {
+          return showError('Сервер выключен, а локальный аккаунт с таким логином не найден. Запустите start-server.bat.');
+        }
+      }
+    }
+  }
+
+  function showAuthModal(tab = 'register') {
+    const overlay = buildAuthModalDOM();
+    switchAuthTab(tab);
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      const focusTarget = tab === 'register' ? byId('cvAuthUsername') : byId('cvAuthLogin');
+      if (focusTarget) focusTarget.focus();
+    }, 60);
+  }
+
+  function hideAuthModal() {
+    const overlay = byId('cinevaAuthModal');
+    if (overlay) overlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function checkAndShowAuthModal() {
+    // If user has a valid server token, do not prompt
+    if (window.CinevaAPI && window.CinevaAPI.token) return;
+
+    // If guest mode was chosen, do not auto-prompt
+    if (localStorage.getItem('cineva_guest_mode') === 'true') return;
+
+    // Otherwise, prompt registration immediately
+    showAuthModal('register');
+  }
+
+  // Hook topbar server status pill to open auth modal if clicked when logged out
+  document.addEventListener('click', (e) => {
+    const pill = e.target.closest('#cinevaServerStatusBadge, .cv-server-status-pill');
+    if (pill) {
+      if (window.CinevaAPI && window.CinevaAPI.currentUser) {
+        showToast(`🟢 Подключено к SQLite: @${window.CinevaAPI.currentUser.handle}`, 'info');
+      } else {
+        showAuthModal('login');
+      }
+    }
+  });
+
+  // Listen to status change to update badge in modal
+  if (window.CinevaAPI && typeof window.CinevaAPI.onStatusChange === 'function') {
+    window.CinevaAPI.onStatusChange(() => {
+      updateAuthServerBadge();
+    });
+  }
+
   // Hash change tab listener
   window.addEventListener('hashchange', syncTabFromHash);
 
@@ -2044,6 +2486,17 @@
   if (document.body.dataset.page === 'profile') {
     renderProfilePage();
   }
+
+  // Trigger registration prompt on first load
+  setTimeout(checkAndShowAuthModal, 150);
+
+  // Global Exports
+  window.CinevaAuth = {
+    showAuthModal,
+    hideAuthModal,
+    switchAuthTab,
+    checkAndShowAuthModal
+  };
 
   // Global Exports
   window.showConfirmModal = showConfirmModal;
@@ -2070,7 +2523,9 @@
     deleteTierlistFromProfile,
     calculateCinemaRank,
     renderProfilePage,
-    updateNavProfileBadge
+    updateNavProfileBadge,
+    showAuthModal,
+    hideAuthModal
   };
   window.CINEVA_ACCOUNT = window.accountManager;
 })();

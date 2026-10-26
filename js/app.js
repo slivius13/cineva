@@ -232,16 +232,23 @@
       list = list.filter(x => !(String(x.id) === id && (x.media_type || x.type) === mediaType && sourceOf(x) === source));
       notice = 'Удалено из избранного';
       noticeType = 'info';
+      if (window.CinevaAPI && window.CinevaAPI.isOnline && window.CinevaAPI.token) {
+        window.CinevaAPI.removeFromWatchlist(id, mediaType).catch(() => {});
+      }
     } else {
       const title = item.title || item.name || item.nameRu || 'Без названия';
       const poster = item.poster || (item.poster_path ? posterUrl(item.poster_path, 'w500') : (item.posterUrl || item.posterUrlPreview || ''));
-      list.unshift({
+      const addedItem = {
         id, media_type: mediaType, title, year: releaseYear(item), poster,
         poster_path: item.poster_path || '', posterUrl: item.posterUrl || '',
         ratingTmdb: item.ratingTmdb || item.vote_average || 0,
         ratingKinopoisk: item.ratingKinopoisk || 0, source
-      });
+      };
+      list.unshift(addedItem);
       notice = `«${title}» добавлено в избранное`;
+      if (window.CinevaAPI && window.CinevaAPI.isOnline && window.CinevaAPI.token) {
+        window.CinevaAPI.addToWatchlist(addedItem).catch(() => {});
+      }
     }
 
     saveWatchlist(list);
@@ -1278,15 +1285,8 @@
   // ==========================================
   function openApiWelcomeIfNeeded() {
     const overlay = byId('apiWelcomeOverlay');
-    if (!overlay) return true;
-    if (isApiSetupComplete()) {
-      overlay.hidden = true;
-      return true;
-    }
-    if (byId('welcomeTmdbKey')) byId('welcomeTmdbKey').value = getTmdbKey();
-    if (byId('welcomeKpKey')) byId('welcomeKpKey').value = getKpKey();
-    overlay.hidden = false;
-    return false;
+    if (overlay) overlay.hidden = true;
+    return true;
   }
 
   function finishApiWelcome(manualOnly = false) {
