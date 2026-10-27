@@ -3,11 +3,30 @@
 // Connects Frontend (GitHub Pages / Local) to CINEVA Database Server
 // ==========================================
 (() => {
-  const DEFAULT_SERVER_URL = 'http://localhost:3000';
+  function getDefaultServerUrl() {
+    if (typeof window !== 'undefined' && window.location && window.location.origin) {
+      const origin = window.location.origin;
+      if (origin.startsWith('http://') || origin.startsWith('https://')) {
+        if (!window.location.hostname.endsWith('github.io')) {
+          return origin;
+        }
+      }
+    }
+    return 'http://localhost:3000';
+  }
+
+  const DEFAULT_SERVER_URL = getDefaultServerUrl();
 
   class CinevaApiClient {
     constructor() {
-      this.baseUrl = localStorage.getItem('cineva_server_url') || DEFAULT_SERVER_URL;
+      const defaultUrl = getDefaultServerUrl();
+      const stored = localStorage.getItem('cineva_server_url');
+      if (stored && stored.includes('localhost') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !window.location.hostname.endsWith('github.io')) {
+        this.baseUrl = defaultUrl;
+        localStorage.setItem('cineva_server_url', defaultUrl);
+      } else {
+        this.baseUrl = stored || defaultUrl;
+      }
       this.token = localStorage.getItem('cineva_server_token') || null;
       this.isOnline = false;
       this.currentUser = null;

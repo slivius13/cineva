@@ -1,0 +1,15 @@
+{
+  "name": "cineva",
+  "version": "2.0.0",
+  "description": "CINEVA - Киносервис и рейтинги с бэкендом",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "keywords": ["cineva", "movies", "ratings", "server"],
+  "author": "",
+  "license": "ISC"
+}
